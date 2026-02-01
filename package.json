@@ -1,0 +1,20 @@
+{
+  "name": "group-goki",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "dev:gateway": "pnpm --filter @group-goki/gateway dev",
+    "dev:web": "pnpm --filter @group-goki/web dev",
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test -- --coverage",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
