@@ -79,11 +79,11 @@ export function createApp() {
   let currentMemoryManager = createMemoryManager()
 
   const discussionOrchestrator = createDiscussionOrchestrator({
-    conversationManager,
+    getConversationManager: () => conversationManager,
     battleRoyale,
     turnManager,
-    leaderboard,
-    registry,
+    getLeaderboard: () => leaderboard,
+    getRegistry: () => registry,
     memoryLookup: async (query) => {
       const integrator = createMemoryIntegrator(currentMemoryManager)
       const { context, manager } = integrator.lookupContext(query)

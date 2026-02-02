@@ -153,11 +153,10 @@ function parseJudgeResponse(
       (a, b) => b.overallScore - a.overallScore,
     )
 
-    const evaluations: EvaluationResult[] = sortedEvals.map((ev, rank) => {
-      const response = responses[ev.responseIndex]
-      if (!response) {
-        throw new Error(`Invalid response index: ${ev.responseIndex}`)
-      }
+    const validEvals = sortedEvals.filter((ev) => responses[ev.responseIndex] != null)
+
+    const evaluations: EvaluationResult[] = validEvals.map((ev, rank) => {
+      const response = responses[ev.responseIndex]!
 
       return {
         id: createId(),

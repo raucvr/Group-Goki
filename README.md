@@ -79,7 +79,7 @@ Build and run:
 ```bash
 pnpm build
 
-# Terminal 1: Gateway server (port 4000)
+# Terminal 1: Gateway server (port 3100)
 pnpm dev:gateway
 
 # Terminal 2: Web UI (port 3000)
@@ -300,7 +300,7 @@ web (depends on shared, independent of gateway at build time)
 
 ### WebSocket events
 
-Connect to `ws://localhost:4000/ws`.
+Connect to `ws://localhost:3100/ws`.
 
 **Client -> Server:**
 

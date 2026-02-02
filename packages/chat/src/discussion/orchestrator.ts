@@ -9,11 +9,6 @@ import type {
 import type { ConversationManager } from '../conversation/manager.js'
 import type { TurnManager, TurnDecision } from '../turns/turn-manager.js'
 import { parseMentions, extractMentionedModelIds } from '../mentions/parser.js'
-import {
-  buildDiscussionSystemPrompt,
-  buildDiscussionUserMessage,
-  type DiscussionPromptContext,
-} from './prompts.js'
 
 export interface DiscussionEvent {
   readonly type: 'user_message' | 'model_response' | 'battle_progress' | 'evaluation' | 'error'
@@ -33,11 +28,11 @@ export interface DiscussionOrchestrator {
 }
 
 export interface DiscussionOrchestratorDeps {
-  readonly conversationManager: ConversationManager
+  readonly getConversationManager: () => ConversationManager
   readonly battleRoyale: BattleRoyaleOrchestrator
   readonly turnManager: TurnManager
-  readonly leaderboard: ModelLeaderboard
-  readonly registry: ModelRegistry
+  readonly getLeaderboard: () => ModelLeaderboard
+  readonly getRegistry: () => ModelRegistry
   readonly memoryLookup?: (query: string) => Promise<string | undefined>
 }
 
@@ -46,7 +41,7 @@ export function createDiscussionOrchestrator(
 ): DiscussionOrchestrator {
   return {
     async handleUserMessage(conversationId, content, onEvent) {
-      let manager = deps.conversationManager
+      let manager = deps.getConversationManager()
 
       // 1. Store user message
       const userMessage = createChatMessage({
@@ -58,7 +53,7 @@ export function createDiscussionOrchestrator(
       onEvent({ type: 'user_message', message: userMessage })
 
       // 2. Parse mentions
-      const allModelIds = deps.registry.getActive().map((m) => m.id)
+      const allModelIds = deps.getRegistry().getActive().map((m) => m.id)
       const mentions = parseMentions(content, allModelIds)
       const mentionedIds = extractMentionedModelIds(mentions)
 
@@ -89,7 +84,7 @@ export function createDiscussionOrchestrator(
 
       // 6. Determine who responds via Turn Manager
       const specialistIds = getSpecialists(
-        deps.leaderboard,
+        deps.getLeaderboard(),
         battleResult.task.category,
       )
 
