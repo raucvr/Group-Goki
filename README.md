@@ -8,7 +8,7 @@
   <a href="https://github.com/raucvr/Group-Goki"><img src="https://img.shields.io/badge/TypeScript-5.7+-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://github.com/raucvr/Group-Goki"><img src="https://img.shields.io/badge/Node-%E2%89%A520-green?style=for-the-badge&logo=node.js&logoColor=white" alt="Node"></a>
   <a href="https://github.com/raucvr/Group-Goki"><img src="https://img.shields.io/badge/pnpm-monorepo-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="Apache 2.0 License"></a>
 </p>
 
 **Group Goki** is an AI group chat platform where LLM models don't role-play — they **compete**. Every user message triggers a Battle Royale: multiple models answer in parallel, a judge evaluates each response, and the best model wins that round. Over time, a live leaderboard tracks which models actually perform best per task category.
@@ -321,4 +321,4 @@ Connect to `ws://localhost:3100/ws`.
 
 ## License
 
-MIT
+Apache License 2.0
