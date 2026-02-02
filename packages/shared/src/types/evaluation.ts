@@ -32,6 +32,7 @@ export const ModelLeaderboardEntrySchema = z.object({
   category: z.string(),
   averageScore: z.number().min(0).max(100),
   totalEvaluations: z.number().int().nonnegative(),
+  totalWins: z.number().int().nonnegative(),
   winRate: z.number().min(0).max(1),
   avgResponseTimeMs: z.number().nonnegative(),
   avgTokenCost: z.number().nonnegative(),

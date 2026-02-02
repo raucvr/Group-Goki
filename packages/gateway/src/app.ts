@@ -59,8 +59,8 @@ export function createApp() {
 
   // Battle Royale components
   const taskAnalyzer = createTaskAnalyzer(router, env.JUDGE_MODEL_ID)
-  const parallelRunner = createParallelRunner((_modelId: string) => openRouterAdapter)
-  const judge = createJudgeEngine(router)
+  const parallelRunner = createParallelRunner((modelId: string) => router.getProvider(modelId))
+  const judge = createJudgeEngine(router, registry)
 
   const battleRoyale = createBattleRoyaleOrchestrator({
     taskAnalyzer,
@@ -76,8 +76,7 @@ export function createApp() {
   // Chat components
   let conversationManager = createConversationManager()
   const turnManager = createTurnManager()
-  const memoryManager = createMemoryManager()
-  const memoryIntegrator = createMemoryIntegrator(memoryManager)
+  let currentMemoryManager = createMemoryManager()
 
   const discussionOrchestrator = createDiscussionOrchestrator({
     conversationManager,
@@ -85,7 +84,12 @@ export function createApp() {
     turnManager,
     leaderboard,
     registry,
-    memoryLookup: async (query) => memoryIntegrator.lookupContext(query),
+    memoryLookup: async (query) => {
+      const integrator = createMemoryIntegrator(currentMemoryManager)
+      const { context, manager } = integrator.lookupContext(query)
+      currentMemoryManager = manager
+      return context
+    },
   })
 
   // State accessors

@@ -1,23 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useCallback, useState } from 'react'
+import { WsOutgoingEventSchema } from '@group-goki/shared'
+import type { WsOutgoingEvent } from '@group-goki/shared'
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:4000/ws'
+export type { WsOutgoingEvent }
+
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3100/ws'
 
 export type WsStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
-
-export interface WsOutgoingEvent {
-  type: string
-  message?: unknown
-  conversationId?: string
-  phase?: string
-  detail?: string
-  evaluations?: unknown[]
-  winnerModelId?: string
-  consensus?: string
-  divergences?: string
-  candidateModels?: string[]
-}
 
 interface UseWebSocketOptions {
   onMessage?: (event: WsOutgoingEvent) => void
@@ -46,8 +37,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data)
-        optionsRef.current.onMessage?.(data)
+        const parsed = WsOutgoingEventSchema.safeParse(JSON.parse(event.data))
+        if (parsed.success) {
+          optionsRef.current.onMessage?.(parsed.data)
+        }
       } catch {
         // ignore parse errors
       }

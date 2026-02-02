@@ -186,12 +186,14 @@ function createChatMessage(params: {
   }
 }
 
+const TOP_SPECIALIST_COUNT = 3
+
 function getSpecialists(
   leaderboard: ModelLeaderboard,
   category: string,
 ): readonly string[] {
   return leaderboard
-    .getTopModels(category, 3)
+    .getTopModels(category, TOP_SPECIALIST_COUNT)
     .map((m) => m.modelId)
 }
 

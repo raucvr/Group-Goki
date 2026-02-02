@@ -2,12 +2,17 @@ import type { ChatMessage, EvaluationResult } from '@group-goki/shared'
 import type { MemoryManager } from './store.js'
 import type { MemorySearchResult } from './types.js'
 
+export interface LookupResult {
+  readonly context: string | undefined
+  readonly manager: MemoryManager
+}
+
 /**
  * Integrates memory system with chat conversations.
- * Automatically learns from conversations and provides context for new ones.
+ * All methods return updated MemoryManager to maintain immutability.
  */
 export interface MemoryIntegrator {
-  readonly lookupContext: (query: string) => string | undefined
+  readonly lookupContext: (query: string) => LookupResult
   readonly learnFromConversation: (
     conversationId: string,
     messages: readonly ChatMessage[],
@@ -19,24 +24,27 @@ export interface MemoryIntegrator {
 }
 
 export function createMemoryIntegrator(
-  memoryManager: MemoryManager,
+  initialManager: MemoryManager,
 ): MemoryIntegrator {
-  let manager = memoryManager
-
   return {
     lookupContext(query) {
-      const results = manager.search(query, 5)
-      if (results.length === 0) return undefined
-
-      // Record access for retrieved items
-      for (const result of results) {
-        manager = manager.recordAccess(result.item.id)
+      const results = initialManager.search(query, 5)
+      if (results.length === 0) {
+        return { context: undefined, manager: initialManager }
       }
 
-      return formatMemoryContext(results)
+      // Record access for retrieved items, producing a new manager
+      let updated = initialManager
+      for (const result of results) {
+        updated = updated.recordAccess(result.item.id)
+      }
+
+      return { context: formatMemoryContext(results), manager: updated }
     },
 
     learnFromConversation(conversationId, messages) {
+      let manager = initialManager
+
       // Extract key insights from conversation
       const modelMessages = messages.filter((m) => m.role === 'model')
       if (modelMessages.length === 0) return manager
@@ -72,21 +80,21 @@ export function createMemoryIntegrator(
         summary,
         importance,
       )
-      manager = updated
 
       // Add conversation as resource
-      const { manager: withResource } = manager.addResource(
+      const { manager: withResource } = updated.addResource(
         item.id,
         'conversation',
         conversationId,
         messages.map((m) => `[${m.role}${m.modelId ? `:${m.modelId}` : ''}] ${m.content.slice(0, 200)}`).join('\n'),
       )
-      manager = withResource
 
-      return manager
+      return withResource
     },
 
     learnFromEvaluation(evaluation, taskCategory) {
+      let manager = initialManager
+
       const store = manager.getStore()
       let evalCategory = [...store.categories.values()].find(
         (c) => c.name === 'model-performance',
@@ -112,17 +120,15 @@ export function createMemoryIntegrator(
         summary,
         importance,
       )
-      manager = updated
 
-      const { manager: withResource } = manager.addResource(
+      const { manager: withResource } = updated.addResource(
         item.id,
         'evaluation',
         evaluation.id,
         JSON.stringify(evaluation.criteria),
       )
-      manager = withResource
 
-      return manager
+      return withResource
     },
   }
 }

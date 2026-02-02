@@ -37,18 +37,22 @@ interface InternalEntry {
   readonly lastEvaluatedAt: string
 }
 
+/**
+ * Create a leaderboard from external ModelLeaderboardEntry data (e.g. loaded from DB).
+ * Note: score distribution is lost in this path (scores become uniform at averageScore),
+ * but totalWins is preserved exactly.
+ */
 export function createModelLeaderboard(
   existingEntries: readonly ModelLeaderboardEntry[] = [],
 ): ModelLeaderboard {
-  // Convert existing entries to internal format
-  const data: ReadonlyMap<string, InternalEntry> = new Map(
+  const data = new Map<string, InternalEntry>(
     existingEntries.map((e) => {
       const key = `${e.modelId}:${e.category}`
       return [key, {
         modelId: e.modelId,
         category: e.category,
         scores: Array(e.totalEvaluations).fill(e.averageScore),
-        wins: Math.round(e.winRate * e.totalEvaluations),
+        wins: e.totalWins,
         totalGames: e.totalEvaluations,
         responseTimes: [e.avgResponseTimeMs],
         tokenCosts: [e.avgTokenCost],
@@ -56,45 +60,51 @@ export function createModelLeaderboard(
       }]
     }),
   )
+  return buildLeaderboard(data)
+}
 
-  function toLeaderboardEntry(entry: InternalEntry): ModelLeaderboardEntry {
-    const avgScore = entry.scores.length > 0
-      ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length
-      : 0
+function toLeaderboardEntry(entry: InternalEntry): ModelLeaderboardEntry {
+  const avgScore = entry.scores.length > 0
+    ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length
+    : 0
 
-    const recentScores = entry.scores.slice(-5)
-    const olderScores = entry.scores.slice(-10, -5)
+  const recentScores = entry.scores.slice(-5)
+  const olderScores = entry.scores.slice(-10, -5)
 
-    let trend: Trend = 'stable'
-    if (recentScores.length >= 3 && olderScores.length >= 3) {
-      const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length
-      const olderAvg = olderScores.reduce((a, b) => a + b, 0) / olderScores.length
-      if (recentAvg > olderAvg + 5) trend = 'improving'
-      else if (recentAvg < olderAvg - 5) trend = 'declining'
-    }
-
-    return {
-      modelId: entry.modelId,
-      category: entry.category,
-      averageScore: Math.round(avgScore * 10) / 10,
-      totalEvaluations: entry.totalGames,
-      winRate: entry.totalGames > 0 ? entry.wins / entry.totalGames : 0,
-      avgResponseTimeMs: entry.responseTimes.length > 0
-        ? entry.responseTimes.reduce((a, b) => a + b, 0) / entry.responseTimes.length
-        : 0,
-      avgTokenCost: entry.tokenCosts.length > 0
-        ? entry.tokenCosts.reduce((a, b) => a + b, 0) / entry.tokenCosts.length
-        : 0,
-      trend,
-      lastEvaluatedAt: entry.lastEvaluatedAt,
-    }
+  let trend: Trend = 'stable'
+  if (recentScores.length >= 3 && olderScores.length >= 3) {
+    const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length
+    const olderAvg = olderScores.reduce((a, b) => a + b, 0) / olderScores.length
+    if (recentAvg > olderAvg + 5) trend = 'improving'
+    else if (recentAvg < olderAvg - 5) trend = 'declining'
   }
 
-  function withNewData(newData: ReadonlyMap<string, InternalEntry>): ModelLeaderboard {
-    const entries = [...newData.values()].map(toLeaderboardEntry)
-    return createModelLeaderboard(entries)
+  return {
+    modelId: entry.modelId,
+    category: entry.category,
+    averageScore: Math.round(avgScore * 10) / 10,
+    totalEvaluations: entry.totalGames,
+    totalWins: entry.wins,
+    winRate: entry.totalGames > 0 ? entry.wins / entry.totalGames : 0,
+    avgResponseTimeMs: entry.responseTimes.length > 0
+      ? entry.responseTimes.reduce((a, b) => a + b, 0) / entry.responseTimes.length
+      : 0,
+    avgTokenCost: entry.tokenCosts.length > 0
+      ? entry.tokenCosts.reduce((a, b) => a + b, 0) / entry.tokenCosts.length
+      : 0,
+    trend,
+    lastEvaluatedAt: entry.lastEvaluatedAt,
   }
+}
 
+/**
+ * Build leaderboard directly from internal entries.
+ * This avoids the lossy InternalEntry -> ModelLeaderboardEntry -> InternalEntry round-trip,
+ * preserving score distribution and exact win counts across record() calls.
+ */
+function buildLeaderboard(
+  data: ReadonlyMap<string, InternalEntry>,
+): ModelLeaderboard {
   return {
     record(evaluation, category) {
       const key = `${evaluation.modelId}:${category}`
@@ -124,7 +134,7 @@ export function createModelLeaderboard(
 
       const newData = new Map(data)
       newData.set(key, updated)
-      return withNewData(newData)
+      return buildLeaderboard(newData)
     },
 
     getTopModels(category, limit = 5) {

@@ -3,7 +3,10 @@
  * Each agent wraps a model with its personality derived from actual performance data.
  */
 
-import type { ModelLeaderboardEntry, TaskCategory } from '@group-goki/shared'
+import type { ModelLeaderboardEntry } from '@group-goki/shared'
+
+const MIN_SPECIALIZATION_SCORE = 70
+const MIN_SPECIALIZATION_EVALUATIONS = 3
 
 export interface ModelAgent {
   readonly modelId: string
@@ -40,10 +43,7 @@ export function createModelAgent(
   )
   const averageScore = totalBattles > 0 ? weightedScoreSum / totalBattles : 0
 
-  const totalWins = myEntries.reduce(
-    (sum, e) => sum + Math.round(e.winRate * e.totalEvaluations),
-    0,
-  )
+  const totalWins = myEntries.reduce((sum, e) => sum + e.totalWins, 0)
   const winRate = totalBattles > 0 ? totalWins / totalBattles : 0
 
   const bestEntry = myEntries.length > 0
@@ -53,7 +53,7 @@ export function createModelAgent(
     : undefined
 
   const specializations = myEntries
-    .filter((e) => e.averageScore >= 70 && e.totalEvaluations >= 3)
+    .filter((e) => e.averageScore >= MIN_SPECIALIZATION_SCORE && e.totalEvaluations >= MIN_SPECIALIZATION_EVALUATIONS)
     .map((e) => e.category)
 
   const trends = myEntries.map((e) => e.trend)

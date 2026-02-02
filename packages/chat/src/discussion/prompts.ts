@@ -1,5 +1,9 @@
 import type { ChatMessage } from '@group-goki/shared'
 
+const MAX_RESPONSE_PREVIEW_CHARS = 2000
+const MAX_HISTORY_MESSAGES = 5
+const MAX_HISTORY_MESSAGE_CHARS = 500
+
 export interface DiscussionPromptContext {
   readonly userMessage: string
   readonly taskCategory: string
@@ -31,7 +35,7 @@ export function buildDiscussionSystemPrompt(context: DiscussionPromptContext): s
     parts.push('Previous responses from other models in this discussion:')
     for (const response of context.otherResponses) {
       parts.push(`--- ${response.modelId} ---`)
-      parts.push(response.content.slice(0, 2000))
+      parts.push(response.content.slice(0, MAX_RESPONSE_PREVIEW_CHARS))
       parts.push('---')
     }
     parts.push('')
@@ -60,8 +64,8 @@ export function buildDiscussionUserMessage(
 ): string {
   if (recentHistory.length === 0) return userMessage
 
-  const historyParts = recentHistory.slice(-5).map(
-    (m) => `[${m.role}]: ${m.content.slice(0, 500)}`,
+  const historyParts = recentHistory.slice(-MAX_HISTORY_MESSAGES).map(
+    (m) => `[${m.role}]: ${m.content.slice(0, MAX_HISTORY_MESSAGE_CHARS)}`,
   )
 
   return [

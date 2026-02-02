@@ -53,3 +53,6 @@ export type {
   BattleRoyaleResult,
   BattleRoyaleOptions,
 } from './battle-royale/orchestrator.js'
+
+// Utils
+export { runWithConcurrencyLimit } from './utils/concurrency.js'

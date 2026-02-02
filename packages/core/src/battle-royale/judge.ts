@@ -3,6 +3,7 @@ import type { EvaluationResult, Task } from '@group-goki/shared'
 import { createId, now } from '@group-goki/shared'
 import type { CompletionResponse } from '../router/provider-adapter.js'
 import type { ModelRouter } from '../router/model-router.js'
+import type { ModelRegistry } from '../router/model-registry.js'
 import { buildJudgePrompt } from './judge-prompts.js'
 
 const JudgeResponseSchema = z.object({
@@ -35,7 +36,23 @@ export interface JudgeEngine {
   ) => Promise<JudgeResult>
 }
 
-export function createJudgeEngine(router: ModelRouter): JudgeEngine {
+export function createJudgeEngine(
+  router: ModelRouter,
+  registry?: ModelRegistry,
+): JudgeEngine {
+  function computeJudgeCost(
+    judgeModelId: string,
+    inputTokens: number,
+    outputTokens: number,
+  ): number {
+    const model = registry?.getById(judgeModelId)
+    if (model) {
+      return inputTokens * model.costPerInputToken + outputTokens * model.costPerOutputToken
+    }
+    // Fallback: zero cost when registry is unavailable
+    return 0
+  }
+
   return {
     async evaluate(task, responses, options = {}) {
       const judgeModelId = options.judgeModelId ?? 'anthropic/claude-sonnet-4'
@@ -83,12 +100,18 @@ export function createJudgeEngine(router: ModelRouter): JudgeEngine {
           temperature: 0.2,
         })
 
+        const judgeCost = computeJudgeCost(
+          judgeModelId,
+          judgeResponse.inputTokens,
+          judgeResponse.outputTokens,
+        )
+
         return parseJudgeResponse(
           judgeResponse.content,
           task,
           responses,
           judgeModelId,
-          judgeResponse.inputTokens * 0.000003 + judgeResponse.outputTokens * 0.000015,
+          judgeCost,
         )
       } catch (error) {
         // Fallback: score by response time (faster = higher score)

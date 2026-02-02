@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { useChatStore, type EvaluationResult } from '@/lib/store'
+import { useChatStore, type BattleEvaluationSummary } from '@/lib/store'
 import { useWebSocket, type WsOutgoingEvent } from '@/lib/ws'
 import { api } from '@/lib/api'
 import { ChatPanel } from '@/components/chat/chat-panel'
@@ -24,25 +24,23 @@ export default function Home() {
     (event: WsOutgoingEvent) => {
       switch (event.type) {
         case 'message':
-          if (event.message) {
-            addMessage(event.message as Parameters<typeof addMessage>[0])
-            setIsLoading(false)
-            setBattleProgress(null)
-          }
+          addMessage(event.message)
+          setIsLoading(false)
+          setBattleProgress(null)
           break
         case 'battle_royale_progress':
           setBattleProgress({
-            conversationId: event.conversationId ?? '',
-            phase: event.phase ?? '',
-            detail: event.detail ?? '',
+            conversationId: event.conversationId,
+            phase: event.phase,
+            detail: event.detail,
             candidateModels: event.candidateModels,
           })
           break
         case 'evaluation_result':
           setLatestEvaluation({
-            conversationId: event.conversationId ?? '',
-            evaluations: (event.evaluations ?? []) as EvaluationResult['evaluations'],
-            winnerModelId: event.winnerModelId ?? '',
+            conversationId: event.conversationId,
+            evaluations: event.evaluations as BattleEvaluationSummary['evaluations'],
+            winnerModelId: event.winnerModelId,
             consensus: event.consensus,
             divergences: event.divergences,
           })

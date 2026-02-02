@@ -6,6 +6,7 @@ import type {
 } from './provider-adapter.js'
 import type { ModelRegistry } from './model-registry.js'
 import { withTimeout, ProviderError } from './provider-adapter.js'
+import { runWithConcurrencyLimit } from '../utils/concurrency.js'
 
 export interface ModelRouter {
   readonly route: (
@@ -92,29 +93,4 @@ export function createModelRouter(
       return providers.get(model.provider) ?? providers.get('openrouter')
     },
   }
-}
-
-async function runWithConcurrencyLimit<T>(
-  tasks: readonly (() => Promise<T>)[],
-  maxConcurrent: number,
-): Promise<readonly T[]> {
-  const results: T[] = []
-  const executing = new Set<Promise<void>>()
-
-  for (const task of tasks) {
-    const promise = task().then((result) => {
-      results.push(result)
-    })
-    const tracked = promise.then(() => {
-      executing.delete(tracked)
-    })
-    executing.add(tracked)
-
-    if (executing.size >= maxConcurrent) {
-      await Promise.race(executing)
-    }
-  }
-
-  await Promise.all(executing)
-  return results
 }

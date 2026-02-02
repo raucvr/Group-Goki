@@ -1,20 +1,14 @@
 import { z } from 'zod'
-import type { Task, TaskCategory, TaskComplexity } from '@group-goki/shared'
-import { createId, now } from '@group-goki/shared'
+import type { Task } from '@group-goki/shared'
+import { ModelCapabilitySchema, TaskCategorySchema, TaskComplexitySchema, createId, now } from '@group-goki/shared'
 
 const AnalysisResponseSchema = z.object({
-  category: z.enum([
-    'strategy', 'technical', 'market-analysis', 'financial',
-    'legal', 'creative', 'research', 'planning', 'general',
-  ]),
-  complexity: z.enum(['simple', 'moderate', 'complex', 'multi-domain']),
+  category: TaskCategorySchema,
+  complexity: TaskComplexitySchema,
   subtasks: z.array(z.object({
     description: z.string(),
-    category: z.enum([
-      'strategy', 'technical', 'market-analysis', 'financial',
-      'legal', 'creative', 'research', 'planning', 'general',
-    ]),
-    requiredCapabilities: z.array(z.string()),
+    category: TaskCategorySchema,
+    requiredCapabilities: z.array(ModelCapabilitySchema),
     priority: z.number().int().min(1).max(10),
   })).default([]),
 })
@@ -40,9 +34,9 @@ export function parseAnalysisResponse(
       subtasks: parsed.subtasks.map((st) => ({
         id: createId(),
         parentTaskId: taskId,
-        category: st.category as TaskCategory,
+        category: st.category,
         description: st.description,
-        requiredCapabilities: st.requiredCapabilities as any,
+        requiredCapabilities: st.requiredCapabilities,
         priority: st.priority,
         status: 'pending' as const,
       })),

@@ -37,7 +37,7 @@ export type { DiscussionPromptContext } from './discussion/prompts.js'
 export { createMemoryManager } from './memory/store.js'
 export type { MemoryManager, MemoryStore } from './memory/store.js'
 export { createMemoryIntegrator } from './memory/integrator.js'
-export type { MemoryIntegrator } from './memory/integrator.js'
+export type { MemoryIntegrator, LookupResult } from './memory/integrator.js'
 export type {
   MemoryCategory,
   MemoryItem,

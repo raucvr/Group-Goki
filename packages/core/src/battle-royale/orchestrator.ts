@@ -144,6 +144,9 @@ export function createBattleRoyaleOrchestrator(deps: {
       deps.onLeaderboardUpdate?.(currentLeaderboard)
 
       // Find winner
+      if (judgeResult.evaluations.length === 0) {
+        throw new Error('Judge returned no evaluations')
+      }
       const winner = judgeResult.evaluations.reduce((best, e) =>
         e.overallScore > best.overallScore ? e : best,
       )

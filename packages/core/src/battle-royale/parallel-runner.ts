@@ -1,5 +1,6 @@
 import type { CompletionRequest, CompletionResponse, ProviderAdapter } from '../router/provider-adapter.js'
 import { withTimeout } from '../router/provider-adapter.js'
+import { runWithConcurrencyLimit } from '../utils/concurrency.js'
 
 export type ParallelRunSuccess = {
   readonly type: 'success'
@@ -86,29 +87,4 @@ export function createParallelRunner(
       }
     },
   }
-}
-
-async function runWithConcurrencyLimit<T>(
-  tasks: readonly (() => Promise<T>)[],
-  maxConcurrent: number,
-): Promise<readonly T[]> {
-  const results: T[] = []
-  const executing = new Set<Promise<void>>()
-
-  for (const task of tasks) {
-    const promise = task().then((result) => {
-      results.push(result)
-    })
-    const tracked = promise.then(() => {
-      executing.delete(tracked)
-    })
-    executing.add(tracked)
-
-    if (executing.size >= maxConcurrent) {
-      await Promise.race(executing)
-    }
-  }
-
-  await Promise.all(executing)
-  return results
 }

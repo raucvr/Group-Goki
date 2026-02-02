@@ -10,7 +10,7 @@ export interface BattleProgress {
   candidateModels?: string[]
 }
 
-export interface EvaluationResult {
+export interface BattleEvaluationSummary {
   conversationId: string
   evaluations: Array<{
     modelId: string
@@ -44,8 +44,8 @@ interface ChatStore {
   setBattleProgress: (progress: BattleProgress | null) => void
 
   // Latest evaluation
-  latestEvaluation: EvaluationResult | null
-  setLatestEvaluation: (evaluation: EvaluationResult | null) => void
+  latestEvaluation: BattleEvaluationSummary | null
+  setLatestEvaluation: (evaluation: BattleEvaluationSummary | null) => void
 
   // UI state
   isLoading: boolean

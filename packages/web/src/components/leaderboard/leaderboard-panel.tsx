@@ -1,6 +1,6 @@
 'use client'
 
-import { useChatStore, type EvaluationResult } from '@/lib/store'
+import { useChatStore, type BattleEvaluationSummary } from '@/lib/store'
 
 export function LeaderboardPanel() {
   const evaluation = useChatStore((s) => s.latestEvaluation)
@@ -53,7 +53,7 @@ function EvaluationCard({
   evaluation,
   isWinner,
 }: {
-  evaluation: EvaluationResult['evaluations'][number]
+  evaluation: BattleEvaluationSummary['evaluations'][number]
   isWinner: boolean
 }) {
   const modelName = evaluation.modelId.split('/').pop() ?? evaluation.modelId

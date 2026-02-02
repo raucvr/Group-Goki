@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+import type { Conversation, ChatMessage } from '@group-goki/shared'
+
+export type { Conversation, ChatMessage }
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3100'
 
 interface ApiResponse<T> {
   success: boolean
@@ -19,28 +23,6 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return json.data
-}
-
-export interface Conversation {
-  id: string
-  title: string
-  status: string
-  messageCount: number
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ChatMessage {
-  id: string
-  conversationId: string
-  role: string
-  modelId?: string
-  content: string
-  mentions: Array<{ modelId: string; startIndex: number; endIndex: number }>
-  parentMessageId?: string
-  evaluationScore?: number
-  metadata: Record<string, unknown>
-  createdAt: string
 }
 
 export const api = {
