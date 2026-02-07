@@ -18,7 +18,7 @@ export function createJwtService(secret: string, expiresIn: string = '7d'): JwtS
       return jwt.sign(
         { userId, username },
         secret,
-        { expiresIn, algorithm: 'HS256' },
+        { expiresIn, algorithm: 'HS256' } as jwt.SignOptions,
       )
     },
 
