@@ -6,6 +6,25 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GOOGLE_AI_API_KEY: z.string().optional(),
   DATABASE_URL: z.string().default('sqlite://./data/group-goki.db'),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT_SECRET must be at least 32 characters')
+    .refine(
+      (val) => {
+        // Reject the old hardcoded default to prevent accidental use
+        if (val === 'development-secret-change-in-production-min-32-chars') {
+          return false
+        }
+        return true
+      },
+      {
+        message: 'JWT_SECRET cannot be the default value. Generate a secure random secret with: openssl rand -base64 32',
+      },
+    ),
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:3000,http://localhost:3001')
+    .transform((val) => val.split(',').map((origin) => origin.trim())),
   GATEWAY_PORT: z.coerce.number().int().default(3100),
   WEB_PORT: z.coerce.number().int().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

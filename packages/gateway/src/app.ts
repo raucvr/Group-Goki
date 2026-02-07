@@ -113,9 +113,10 @@ export function createApp() {
 
   // Middleware
   app.use('*', cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: env.CORS_ORIGINS,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   }))
   app.use('*', logger())
 

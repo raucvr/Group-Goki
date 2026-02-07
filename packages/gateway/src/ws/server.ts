@@ -17,8 +17,9 @@ export interface WsServer {
 
 export interface WsServerOptions {
   readonly onMessage: (clientId: string, event: WsIncomingEvent) => void
-  readonly onConnect: (clientId: string) => void
+  readonly onConnect: (clientId: string, userId: string) => void
   readonly onDisconnect: (clientId: string) => void
+  readonly verifyToken?: (token: string) => { userId: string; username: string } | null
 }
 
 export function createWsServer(
@@ -34,18 +35,31 @@ export function createWsServer(
   wss.on('connection', (ws) => {
     clientCounter += 1
     const clientId = `client-${clientCounter}`
+
+    // Track pending authentication
+    let authenticated = false
+    let userId = 'anonymous'
+    let authTimeout: NodeJS.Timeout | null = null
+
+    // 5-second authentication timeout
+    authTimeout = setTimeout(() => {
+      if (!authenticated) {
+        ws.close(4001, 'Authentication timeout')
+        clients.delete(clientId)
+      }
+    }, 5000)
+
     const client: WsClient = {
       id: clientId,
       ws,
       subscriptions: new Set(),
     }
-    clients.set(clientId, client)
-    options.onConnect(clientId)
 
     ws.on('message', (raw) => {
       try {
         const data = JSON.parse(raw.toString())
         const parsed = WsIncomingEventSchema.safeParse(data)
+
         if (!parsed.success) {
           sendToClient(client, {
             type: 'error',
@@ -55,6 +69,45 @@ export function createWsServer(
         }
 
         const event = parsed.data
+
+        // Handle authentication as first message
+        if (event.type === 'auth') {
+          if (authenticated) {
+            sendToClient(client, {
+              type: 'error',
+              message: 'Already authenticated',
+            })
+            return
+          }
+
+          if (options.verifyToken) {
+            const payload = options.verifyToken(event.token)
+            if (!payload) {
+              ws.close(4001, 'Invalid or expired token')
+              clients.delete(clientId)
+              return
+            }
+            userId = payload.userId
+          }
+
+          authenticated = true
+          if (authTimeout) clearTimeout(authTimeout)
+          clients.set(clientId, client)
+
+          // Send auth success
+          sendToClient(client, { type: 'authenticated', userId })
+          options.onConnect(clientId, userId)
+          return
+        }
+
+        // All other messages require authentication
+        if (!authenticated) {
+          sendToClient(client, {
+            type: 'error',
+            message: 'Not authenticated. Send auth message first.',
+          })
+          return
+        }
 
         // Handle subscribe/unsubscribe locally
         if (event.type === 'subscribe') {
@@ -77,11 +130,13 @@ export function createWsServer(
     })
 
     ws.on('close', () => {
+      if (authTimeout) clearTimeout(authTimeout)
       clients.delete(clientId)
-      options.onDisconnect(clientId)
+      if (authenticated) options.onDisconnect(clientId)
     })
 
     ws.on('error', () => {
+      if (authTimeout) clearTimeout(authTimeout)
       clients.delete(clientId)
     })
   })

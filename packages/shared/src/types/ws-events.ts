@@ -3,6 +3,11 @@ import { ChatMessageSchema } from './messages.js'
 import { EvaluationResultSchema } from './evaluation.js'
 
 // Client -> Server events
+export const WsAuthSchema = z.object({
+  type: z.literal('auth'),
+  token: z.string(),
+})
+
 export const WsSendMessageSchema = z.object({
   type: z.literal('send_message'),
   conversationId: z.string(),
@@ -20,6 +25,7 @@ export const WsUnsubscribeSchema = z.object({
 })
 
 export const WsIncomingEventSchema = z.discriminatedUnion('type', [
+  WsAuthSchema,
   WsSendMessageSchema,
   WsSubscribeSchema,
   WsUnsubscribeSchema,
@@ -66,6 +72,11 @@ export const WsEvaluationResultSchema = z.object({
   divergences: z.string().optional(),
 })
 
+export const WsAuthenticatedEventSchema = z.object({
+  type: z.literal('authenticated'),
+  userId: z.string(),
+})
+
 export const WsErrorEventSchema = z.object({
   type: z.literal('error'),
   message: z.string(),
@@ -73,6 +84,7 @@ export const WsErrorEventSchema = z.object({
 })
 
 export const WsOutgoingEventSchema = z.discriminatedUnion('type', [
+  WsAuthenticatedEventSchema,
   WsMessageEventSchema,
   WsStreamEventSchema,
   WsBattleProgressSchema,

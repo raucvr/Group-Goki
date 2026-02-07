@@ -26,6 +26,16 @@ export type { CostTracker, CostRecord } from './budget/cost-tracker.js'
 export { createDatabase } from './db/client.js'
 export type { DatabaseInstance, DatabaseConnection } from './db/client.js'
 export * as dbSchema from './db/schema.js'
+export { runMigrations } from './db/migrate.js'
+
+export { createConversationRepository } from './db/repositories/conversation-repository.js'
+export type { ConversationRepository } from './db/repositories/conversation-repository.js'
+
+export { createMessageRepository } from './db/repositories/message-repository.js'
+export type { MessageRepository } from './db/repositories/message-repository.js'
+
+export { createEvaluationRepository } from './db/repositories/evaluation-repository.js'
+export type { EvaluationRepository } from './db/repositories/evaluation-repository.js'
 
 // Task Analyzer
 export { createTaskAnalyzer } from './task-analyzer/analyzer.js'

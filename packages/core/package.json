@@ -22,6 +22,7 @@
     "@group-goki/shared": "workspace:*",
     "better-sqlite3": "^11.7.0",
     "drizzle-orm": "^0.38.0",
+    "eventsource-parser": "^2.0.1",
     "pino": "^9.6.0",
     "zod": "^3.24.0"
   },
