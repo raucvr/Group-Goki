@@ -20,17 +20,19 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@group-goki/shared": "workspace:*",
-    "@group-goki/core": "workspace:*",
     "@group-goki/chat": "workspace:*",
+    "@group-goki/core": "workspace:*",
+    "@group-goki/shared": "workspace:*",
     "@hono/node-server": "^1.13.0",
     "@hono/zod-validator": "^0.4.0",
     "hono": "^4.6.0",
+    "jsonwebtoken": "^9.0.2",
     "pino": "^9.6.0",
     "ws": "^8.18.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.5.0",
     "tsup": "^8.3.0",

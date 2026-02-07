@@ -17,8 +17,9 @@ export interface WsServer {
 
 export interface WsServerOptions {
   readonly onMessage: (clientId: string, event: WsIncomingEvent) => void
-  readonly onConnect: (clientId: string) => void
+  readonly onConnect: (clientId: string, userId: string) => void
   readonly onDisconnect: (clientId: string) => void
+  readonly verifyToken?: (token: string) => { userId: string; username: string } | null
 }
 
 export function createWsServer(
@@ -31,7 +32,21 @@ export function createWsServer(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wss = new WebSocketServer({ server: httpServer as any, path: '/ws' })
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    // Extract and verify token from query string
+    const url = new URL(req.url ?? '', 'ws://localhost')
+    const token = url.searchParams.get('token')
+    let userId = 'anonymous'
+
+    if (options.verifyToken && token) {
+      const payload = options.verifyToken(token)
+      if (!payload) {
+        ws.close(4001, 'Invalid or expired token')
+        return
+      }
+      userId = payload.userId
+    }
+
     clientCounter += 1
     const clientId = `client-${clientCounter}`
     const client: WsClient = {
@@ -40,7 +55,8 @@ export function createWsServer(
       subscriptions: new Set(),
     }
     clients.set(clientId, client)
-    options.onConnect(clientId)
+
+    options.onConnect(clientId, userId)
 
     ws.on('message', (raw) => {
       try {
