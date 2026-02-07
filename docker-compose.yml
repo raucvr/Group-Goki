@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: .
+      target: gateway
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=sqlite:///app/data/group-goki.db
+      - GATEWAY_PORT=3100
+      - WEB_PORT=3000
+      - LOG_LEVEL=info
+      - JUDGE_MODEL_ID=anthropic/claude-sonnet-4
+      - MAX_PARALLEL_MODELS=5
+      - MAX_MONTHLY_BUDGET_USD=100
+    volumes:
+      - gateway-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "3000:3000"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  gateway-data:
+    driver: local
