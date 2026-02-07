@@ -8,9 +8,10 @@ export type { WsOutgoingEvent }
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3100/ws'
 
-export type WsStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
+export type WsStatus = 'connecting' | 'authenticating' | 'connected' | 'disconnected' | 'error'
 
 interface UseWebSocketOptions {
+  token?: string
   onMessage?: (event: WsOutgoingEvent) => void
   onConnect?: () => void
   onDisconnect?: () => void
@@ -20,6 +21,7 @@ interface UseWebSocketOptions {
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null)
   const [status, setStatus] = useState<WsStatus>('disconnected')
+  const [authenticated, setAuthenticated] = useState(false)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const optionsRef = useRef(options)
   optionsRef.current = options
@@ -28,17 +30,33 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
     setStatus('connecting')
+    setAuthenticated(false)
     const ws = new WebSocket(WS_URL)
 
     ws.onopen = () => {
-      setStatus('connected')
-      optionsRef.current.onConnect?.()
+      setStatus('authenticating')
+
+      // Send auth as first message if token is provided
+      if (optionsRef.current.token) {
+        ws.send(JSON.stringify({ type: 'auth', token: optionsRef.current.token }))
+      } else {
+        // No token provided - send anonymous auth
+        ws.send(JSON.stringify({ type: 'auth', token: '' }))
+      }
     }
 
     ws.onmessage = (event) => {
       try {
         const parsed = WsOutgoingEventSchema.safeParse(JSON.parse(event.data))
         if (parsed.success) {
+          // Handle authentication success
+          if (parsed.data.type === 'authenticated') {
+            setAuthenticated(true)
+            setStatus('connected')
+            optionsRef.current.onConnect?.()
+            return
+          }
+
           optionsRef.current.onMessage?.(parsed.data)
         }
       } catch {
@@ -73,10 +91,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [])
 
   const send = useCallback((data: unknown) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (wsRef.current?.readyState === WebSocket.OPEN && authenticated) {
       wsRef.current.send(JSON.stringify(data))
     }
-  }, [])
+  }, [authenticated])
 
   const subscribe = useCallback((conversationId: string) => {
     send({ type: 'subscribe', conversationId })

@@ -74,6 +74,26 @@ Set your OpenRouter API key (required):
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
 ```
 
+### Security Setup
+
+**Generate a JWT Secret** (required for authentication):
+
+```bash
+# Linux/Mac
+openssl rand -base64 32
+
+# Or use Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Add the generated secret to your `.env` file:
+
+```env
+JWT_SECRET=your_generated_secret_here
+```
+
+**⚠️ IMPORTANT:** Never commit your `.env` file or use the default JWT_SECRET value in production. This would allow attackers to bypass authentication and forge valid tokens.
+
 Build and run:
 
 ```bash

@@ -5,6 +5,7 @@ describe('loadEnv', () => {
   it('loads valid environment variables', () => {
     const env = {
       OPENROUTER_API_KEY: 'test-key',
+      JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
       DATABASE_URL: 'sqlite://./test.db',
       GATEWAY_PORT: '3100',
       WEB_PORT: '3000',
@@ -31,6 +32,7 @@ describe('loadEnv', () => {
   it('uses default values when optional variables are missing', () => {
     const env = {
       OPENROUTER_API_KEY: 'test-key',
+      JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
     }
 
     const result = loadEnv(env)
@@ -65,6 +67,7 @@ describe('loadEnv', () => {
     for (const nodeEnv of validEnvs) {
       const result = loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         NODE_ENV: nodeEnv,
       })
       expect(result.NODE_ENV).toBe(nodeEnv)
@@ -86,6 +89,7 @@ describe('loadEnv', () => {
     for (const level of validLevels) {
       const result = loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         LOG_LEVEL: level,
       })
       expect(result.LOG_LEVEL).toBe(level)
@@ -96,6 +100,7 @@ describe('loadEnv', () => {
     expect(() =>
       loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         MAX_PARALLEL_MODELS: '0',
       }),
     ).toThrow()
@@ -103,12 +108,14 @@ describe('loadEnv', () => {
     expect(() =>
       loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         MAX_PARALLEL_MODELS: '21',
       }),
     ).toThrow()
 
     const result = loadEnv({
       OPENROUTER_API_KEY: 'key',
+      JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
       MAX_PARALLEL_MODELS: '10',
     })
     expect(result.MAX_PARALLEL_MODELS).toBe(10)
@@ -118,6 +125,7 @@ describe('loadEnv', () => {
     expect(() =>
       loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         MAX_MONTHLY_BUDGET_USD: '0',
       }),
     ).toThrow()
@@ -125,6 +133,7 @@ describe('loadEnv', () => {
     expect(() =>
       loadEnv({
         OPENROUTER_API_KEY: 'key',
+        JWT_SECRET: 'test-secret-min-32-chars-required-by-schema',
         MAX_MONTHLY_BUDGET_USD: '-10',
       }),
     ).toThrow()

@@ -1,0 +1,7 @@
+{
+  "allowedTools": {
+    "Bash(git clone:*)": true,
+    "Bash(pnpm:*)": true,
+    "Bash(npm:*)": true
+  }
+}

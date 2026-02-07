@@ -10,6 +10,8 @@ services:
     environment:
       - NODE_ENV=production
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - DATABASE_URL=sqlite:///app/data/group-goki.db
       - GATEWAY_PORT=3100
       - WEB_PORT=3000
