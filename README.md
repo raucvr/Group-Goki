@@ -1,7 +1,7 @@
-# Group Goki — AI Model Battle Royale
+# Group Goki — Your Executive Advisory Team
 
 <p align="center">
-  <strong>Let the models compete. Let the best one win.</strong>
+  <strong>Your MBB consulting team + FAANG tech team: Helping you build your 1-person unicorn.</strong>
 </p>
 
 <p align="center">
@@ -11,45 +11,90 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="Apache 2.0 License"></a>
 </p>
 
-**Group Goki** is an AI group chat platform where LLM models don't role-play — they **compete**. Every user message triggers a Battle Royale: multiple models answer in parallel, a judge evaluates each response, and the best model wins that round. Over time, a live leaderboard tracks which models actually perform best per task category.
+**Group Goki** is an AI advisory platform where specialized agents—your **gokis**—collaborate autonomously to help solo entrepreneurs build Fortune 500 companies. Think McKinsey strategists + Google engineers in a single room, debating and iterating on your challenges while you spectate, steer, and ultimately decide.
 
-Think of it as a tournament arena for LLMs — a survival-of-the-fittest group chat where every model must prove its worth to stay in the conversation.
+You're not managing a tournament. You're running a boardroom.
+
+## Philosophy: Strategy is the vector
+
+> **Direction matters more than speed.** If your strategy is wrong, every hour of execution compounds the error. Group Goki is **strategy-first**: your gokis ensure the foundation is sound before the technical work begins.
 
 ## How it works
 
 ```
-User sends a message
+User: "Build a B2B SaaS go-to-market strategy for developer tools"
         |
         v
-+-------------------+
-|   Task Analyzer    |  Classifies: coding / reasoning / creative / factual / ...
-+-------------------+
++-------------------------+
+|   Strategy Advisors      |  MBB-style business planning, market positioning, pricing
++-------------------------+
         |
         v
-+-------------------+
-|  Parallel Runner   |  Sends the task to N models simultaneously via OpenRouter
-+-------------------+
++-------------------------+
+|   Tech Leads             |  FAANG-level architecture, scalability, infrastructure
++-------------------------+
         |
         v
-+-------------------+
-|   Judge Engine     |  A dedicated judge model scores each response (accuracy,
-|                    |  depth, clarity, relevance) and picks the winner
-+-------------------+
++-------------------------+
+|   Product Experts        |  Feature prioritization, user experience, roadmap
++-------------------------+
         |
         v
-+-------------------+
-|   Leaderboard      |  Updates per-category rankings, win rates, trends
-+-------------------+
++-------------------------+
+|   Execution Managers     |  Resource allocation, timeline planning, dependency mapping
++-------------------------+
         |
         v
-+-------------------+
-|   Turn Manager     |  Winner responds first, follow-ups from specialists,
-|                    |  challengers get a chance to prove themselves
-+-------------------+
+   Autonomous Discussion
+   (You spectate, steer, or let them work)
         |
         v
-   Group Chat UI
+   Refined Recommendations
 ```
+
+Each **goki** is a specialized AI advisor optimized for a specific domain (strategy, tech, product, execution). They debate amongst themselves, refine ideas through iteration, and present you with battle-tested recommendations.
+
+You act as **HR/CPO**: hire (add) or fire (remove) gokis as your needs evolve. Strategy advisor too conservative? Bring in a risk-taker. Tech lead over-engineering? Swap for a pragmatist.
+
+## Key features
+
+- **Strategy-First Philosophy** — Direction before speed. Get the vector right, then execute with confidence.
+- **Autonomous Collaboration** — Gokis discuss and iterate without constant prompting. You spectate their debates or jump in to steer.
+- **Domain Specialization** — Each goki optimized for specific expertise: strategy, architecture, product, execution.
+- **Self-Upgrading** — Gokis monitor the AI landscape and autonomously propose upgrades when superior models emerge.
+- **HR Control** — You're the Chief People Officer. Hire, fire, and rotate specialists as your company's needs change.
+- **Model Agnostic** — Uses 100+ LLMs via OpenRouter. Best-in-class models per domain, continuously evolving.
+
+## Example scenarios
+
+**Strategy**: "Map out our B2B SaaS pricing and packaging strategy for enterprise vs. SMB"
+
+**Architecture**: "Design a scalable infrastructure to handle 100M daily active users on $50K/mo AWS budget"
+
+**Product**: "Evaluate whether we should build a freemium tier or stay strictly paid-only"
+
+**Market Analysis**: "Analyze competitive positioning against Stripe, Plaid, and Adyen in fintech payments"
+
+**Execution**: "Create a 6-month roadmap to hit $1M ARR before Series A"
+
+## Target: The solo unicorn founder
+
+Group Goki is built for the **1-person unicorn** builder. You don't have a board of advisors. You don't have a CTO, CMO, or VP of Product. You have **gokis**.
+
+This is your force multiplier: world-class strategic thinking + FAANG-level technical execution, in a package that scales from idea to IPO without hiring a single employee.
+
+## Model selection: Autonomous Battle Royale
+
+When establishing domain expertise (or when a powerful new model emerges), your gokis can autonomously run a **Battle Royale**:
+
+1. Multiple models compete on representative tasks
+2. Judge evaluates accuracy, depth, strategic thinking, execution clarity
+3. Winner becomes the domain specialist
+4. Gokis monitor the AI landscape and propose re-evaluation when better models arrive
+
+You don't manage this process—**your gokis do**. They have full permissions to track new model releases, discuss upgrade paths, and recommend changes to the team composition.
+
+After initial selection, the focus shifts to **collaboration over competition**. Proven specialists stay in their roles until demonstrably better options emerge.
 
 ## Quick start
 
@@ -92,7 +137,7 @@ Add the generated secret to your `.env` file:
 JWT_SECRET=your_generated_secret_here
 ```
 
-**⚠️ IMPORTANT:** Never commit your `.env` file or use the default JWT_SECRET value in production. This would allow attackers to bypass authentication and forge valid tokens.
+**⚠️ IMPORTANT:** Never commit your `.env` file or use the default JWT_SECRET value in production.
 
 Build and run:
 
@@ -115,9 +160,9 @@ group-goki/
 ├── packages/
 │   ├── shared/     Zod schemas, types, constants (zero dependencies)
 │   ├── core/       Model router, Battle Royale engine, database, budget tracking
-│   ├── chat/       Conversation manager, turn logic, memory, discussion orchestrator
+│   ├── chat/       Conversation manager, goki orchestration, memory, discussion flow
 │   ├── gateway/    Hono REST API + WebSocket server
-│   └── web/        Next.js 14 dark-themed UI with real-time updates
+│   └── web/        Next.js 14 dark-themed UI with real-time goki debates
 ├── .env.example
 ├── pnpm-workspace.yaml
 └── package.json
@@ -132,44 +177,47 @@ Zero-dependency type foundation. Zod schemas for runtime validation, shared acro
 
 ### `@group-goki/core`
 
-The engine. Handles everything from model routing to battle evaluation.
+The engine. Handles everything from model routing to autonomous Battle Royale evaluation.
 
 - **Model Router** — OpenRouter adapter with streaming support, parallel execution, timeout/retry logic
 - **Model Registry** — Tracks available models, capabilities, pricing from OpenRouter's 100+ model catalog
-- **Task Analyzer** — Classifies user messages by task type (coding, reasoning, creative, factual, math, translation) to select the right competitors
-- **Battle Royale Engine** — Parallel runner + judge engine + leaderboard in a single orchestrated pipeline
-- **Judge Engine** — Dedicated model evaluates responses on accuracy, depth, clarity, relevance (1-10 each)
-- **Model Leaderboard** — Per-category rankings with Elo-style trends, win rates, and challenger slots for untested models
+- **Task Analyzer** — Classifies challenges by domain (strategy, tech, product, execution) to route to the right goki
+- **Battle Royale Engine** — Autonomous model evaluation when establishing domain expertise or upgrading specialists
+- **Judge Engine** — Dedicated model evaluates responses on accuracy, depth, clarity, strategic soundness (1-10 each)
+- **Goki Leaderboard** — Per-domain rankings with performance trends, specialization tracking, upgrade signals
 - **Cost Tracker** — Per-model spend tracking with configurable monthly budget limits
 - **Database** — Drizzle ORM + SQLite with 8 tables (conversations, messages, evaluations, model stats, costs, ...)
 
 ### `@group-goki/chat`
 
-Group chat intelligence layer.
+Goki orchestration and autonomous discussion layer.
 
 - **Conversation Manager** — Immutable conversation state with message history and context windowing
-- **Mention Parser** — `@claude` / `@gpt` mention syntax for directing questions to specific models
-- **Turn Manager** — Priority-based turn decisions: mentioned > battle winner > specialist > follow-up > challenger
-- **Discussion Orchestrator** — Full discussion flow: parse mentions -> run Battle Royale -> emit events -> manage turns -> build consensus
+- **Mention Parser** — `@strategy` / `@tech` / `@product` mention syntax for directing questions to specific gokis
+- **Turn Manager** — Priority-based turn decisions: mentioned > domain expert > follow-up specialist > challenger
+- **Discussion Orchestrator** — Full discussion flow: parse mentions -> route to specialists -> facilitate debate -> synthesize consensus
 - **Memory System** — 3-layer hierarchical memory (Category > Item > Resource) with keyword search, importance/recency boosting
 - **Memory Integrator** — Auto-learns from conversations and evaluation results
-- **Model Agent** — Data-driven agent representation built from real leaderboard performance (no role-playing)
+- **Goki Agent** — Data-driven agent representation built from real performance metrics (no role-playing)
 
 ### `@group-goki/gateway`
 
 HTTP + WebSocket server, the glue between core logic and the web UI.
 
 - **REST API** (Hono) — `/api/conversations`, `/api/models`, `/api/health`
-- **WebSocket** — Real-time events: `model_response`, `battle_progress`, `evaluation_result`, `error`
-- **CORS** — Configured for local development (localhost:3000, 3001)
+- **WebSocket** — Real-time events: `model_response`, `goki_debate`, `evaluation_result`, `upgrade_proposal`
+- **Authentication** — JWT tokens with first-message WebSocket auth (no query param leakage)
+- **CORS** — Environment-configurable origins for production deployments
 
 ### `@group-goki/web`
 
 Next.js 14 dark-themed UI.
 
-- **Chat Panel** — Model-colored message bubbles (orange=Claude, green=GPT, blue=Gemini, purple=DeepSeek)
-- **Battle Progress** — Animated phase indicator (analyzing -> competing -> judging -> discussing -> complete)
-- **Leaderboard Panel** — Live evaluation results with ranked scores, criteria breakdown, winner badge
+- **Goki Debate Panel** — Watch your advisors discuss strategy, architecture, product decisions in real-time
+- **Spectator Mode** — Observe autonomous goki discussions without interrupting
+- **Steering Controls** — Jump into the conversation to redirect, challenge assumptions, or request deeper analysis
+- **HR Dashboard** — Hire, fire, and rotate goki specialists as your company evolves
+- **Model Performance** — Live evaluation results with ranked scores, criteria breakdown, specialization badges
 - **Conversation Sidebar** — Multi-conversation support with create/archive
 - **State Management** — Zustand store with WebSocket event integration
 - **Auto-reconnect WebSocket** — Seamless reconnection with status indicator
@@ -181,12 +229,14 @@ Group Goki connects to **100+ LLM models** through [OpenRouter](https://openrout
 | Provider | Models |
 |----------|--------|
 | Anthropic | Claude Opus 4.5, Claude Sonnet 4, Claude Haiku |
-| OpenAI | GPT-4o, GPT-4 Turbo, o1, o3 |
-| Google | Gemini 2.5 Pro, Gemini 2.5 Flash |
+| OpenAI | GPT-4o, GPT-4 Turbo, o1, o3-mini |
+| Google | Gemini 2.0 Flash Thinking, Gemini 2.5 Pro |
 | Meta | Llama 3.3 70B, Llama 3.1 405B |
 | DeepSeek | DeepSeek V3, DeepSeek R1 |
 | Mistral | Mistral Large, Mixtral 8x22B |
 | ... | And many more via OpenRouter |
+
+Your gokis autonomously track new model releases and propose upgrades when superior options become available.
 
 Direct API keys for Anthropic, OpenAI, and Google are supported as fallbacks.
 
@@ -197,6 +247,10 @@ Direct API keys for Anthropic, OpenAI, and Google are supported as fallbacks.
 ```env
 # Required
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
+JWT_SECRET=your_randomly_generated_32_char_secret_here
+
+# CORS Configuration (comma-separated origins)
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 # Optional: Direct provider keys (fallback)
 ANTHROPIC_API_KEY=
@@ -210,7 +264,7 @@ DATABASE_URL=sqlite://./data/group-goki.db
 GATEWAY_PORT=3100
 WEB_PORT=3000
 
-# Battle Royale
+# Goki Team Configuration
 JUDGE_MODEL_ID=anthropic/claude-sonnet-4
 MAX_PARALLEL_MODELS=5
 MAX_MONTHLY_BUDGET_USD=100
@@ -220,12 +274,12 @@ NODE_ENV=development
 LOG_LEVEL=info
 ```
 
-### Battle Royale tuning
+### Goki team tuning
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `JUDGE_MODEL_ID` | `anthropic/claude-sonnet-4` | Model used to evaluate responses |
-| `MAX_PARALLEL_MODELS` | `5` | Max models competing per round |
+| `JUDGE_MODEL_ID` | `anthropic/claude-sonnet-4` | Model used to evaluate goki performance |
+| `MAX_PARALLEL_MODELS` | `5` | Max gokis debating per discussion |
 | `MAX_MONTHLY_BUDGET_USD` | `100` | Monthly spend cap across all models |
 
 ## Development
@@ -286,6 +340,7 @@ web (depends on shared, independent of gateway at build time)
 | Database | Drizzle ORM + better-sqlite3 |
 | HTTP Server | Hono + @hono/node-server |
 | WebSocket | ws |
+| Authentication | JWT (HS256, first-message auth) |
 | Web Framework | Next.js 14 (App Router) |
 | UI | React 18 + Tailwind CSS |
 | State | Zustand |
@@ -299,7 +354,8 @@ web (depends on shared, independent of gateway at build time)
 - **Factory functions** — No classes with `new`. Every module exports `createXxx()` factory functions that return interfaces.
 - **Zod at the boundary** — Runtime validation for all external input (API requests, WebSocket messages, env vars).
 - **Small files** — High cohesion, low coupling. Most files under 400 lines.
-- **Zero role-playing** — Models are not assigned personas. Agent profiles are built entirely from real performance data on the leaderboard.
+- **Strategy-first** — Direction before execution. Gokis ensure the vector is correct before building.
+- **Autonomous agents** — Gokis self-organize, self-upgrade, and self-optimize. User provides direction, not micromanagement.
 
 ## API reference
 
@@ -314,9 +370,9 @@ web (depends on shared, independent of gateway at build time)
 | `GET` | `/api/conversations/:id/messages` | Get messages |
 | `POST` | `/api/conversations/:id/archive` | Archive conversation |
 | `GET` | `/api/models` | List all models |
-| `GET` | `/api/models/active` | List active models |
-| `GET` | `/api/models/leaderboard` | Get leaderboard |
-| `GET` | `/api/models/:modelId/profile` | Get model profile |
+| `GET` | `/api/models/active` | List active goki specialists |
+| `GET` | `/api/models/leaderboard` | Get performance leaderboard |
+| `GET` | `/api/models/:modelId/profile` | Get goki specialist profile |
 
 ### WebSocket events
 
@@ -325,19 +381,32 @@ Connect to `ws://localhost:3100/ws`.
 **Client -> Server:**
 
 ```json
+{ "type": "auth", "token": "your-jwt-token" }
 { "type": "subscribe", "conversationId": "abc123" }
 { "type": "unsubscribe", "conversationId": "abc123" }
-{ "type": "send_message", "conversationId": "abc123", "content": "Explain quicksort" }
+{ "type": "send_message", "conversationId": "abc123", "content": "Evaluate our pricing strategy" }
 ```
 
 **Server -> Client:**
 
 ```json
+{ "type": "authenticated", "userId": "user-123" }
 { "type": "model_response", "message": { ... } }
-{ "type": "battle_progress", "phase": "competing", "candidates": ["claude-sonnet-4", "gpt-4o"] }
-{ "type": "evaluation_result", "evaluations": [ ... ], "consensus": "..." }
+{ "type": "stream", "chunk": "..." }
+{ "type": "battle_progress", "phase": "evaluating", "candidates": ["claude-sonnet-4", "gpt-4o"] }
+{ "type": "evaluation_result", "evaluations": [ ... ], "winner": "claude-sonnet-4" }
 { "type": "error", "message": "..." }
 ```
+
+## Security
+
+- **JWT Authentication** — HS256 tokens, 32+ character secrets required
+- **WebSocket Auth** — First-message authentication (no query param token leakage)
+- **Non-root Containers** — Docker images run as nodejs user (UID 1001)
+- **Environment-based CORS** — Configurable origins, no hardcoded localhost
+- **No secrets in repo** — .env files gitignored, examples provided
+
+Full security audit completed February 2026. See commit history for details.
 
 ## License
 
