@@ -83,8 +83,15 @@ export type {
 export { createJudgeEngine } from './battle-royale/judge.js'
 export type { JudgeEngine, JudgeResult } from './battle-royale/judge.js'
 
-export { createModelLeaderboard } from './battle-royale/leaderboard.js'
-export type { ModelLeaderboard, ModelProfile } from './battle-royale/leaderboard.js'
+export {
+  createModelLeaderboard,
+  createModelLeaderboardFromPersistence,
+} from './battle-royale/leaderboard.js'
+export type {
+  ModelLeaderboard,
+  ModelProfile,
+  LeaderboardPersistenceEntry,
+} from './battle-royale/leaderboard.js'
 
 export { createBattleRoyaleOrchestrator } from './battle-royale/orchestrator.js'
 export type {
@@ -95,3 +102,4 @@ export type {
 
 // Utils
 export { runWithConcurrencyLimit } from './utils/concurrency.js'
+export { escapeXml, wrapInTag } from './utils/prompt-sanitizer.js'

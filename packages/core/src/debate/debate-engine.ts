@@ -4,6 +4,7 @@ import type { ModelRouter } from '../router/model-router.js'
 import type { GokiRosterService } from '../goki-roster/roster-service.js'
 import type { GokiRole } from '../db/repositories/roster-repository.js'
 import type { ConsensusDetector, ConsensusResult } from './consensus-detector.js'
+import { escapeXml } from '../utils/prompt-sanitizer.js'
 
 export interface DebateConfig {
   readonly maxRounds: number
@@ -205,22 +206,30 @@ function buildGokiPrompt(
 
   const debateContext =
     debateHistory.length > 0
-      ? `\n\n**Debate So Far:**\n${debateHistory
-          .map((m) => `[${m.metadata?.debateRole ?? 'unknown'}]: ${m.content}`)
-          .join('\n\n')}`
+      ? `\n\n<DEBATE_HISTORY>
+${debateHistory
+  .map(
+    (m) =>
+      `<MESSAGE role="${escapeXml(String(m.metadata?.debateRole ?? 'unknown'))}">
+${escapeXml(m.content)}
+</MESSAGE>`,
+  )
+  .join('\n')}
+</DEBATE_HISTORY>`
       : ''
 
   return `${roleDescriptions[role]}
 
-**User Request:**
-${userMessage}
+<USER_REQUEST>
+${escapeXml(userMessage)}
+</USER_REQUEST>
 ${debateContext}
 
 **Round ${roundNumber} Instructions:**
 ${
   roundNumber === 1
     ? 'Provide your initial analysis and recommendations from your domain perspective.'
-    : 'Review the previous goki responses. Build on their insights, address gaps, challenge assumptions if needed, and refine the collective recommendation.'
+    : 'Review the previous goki responses in <DEBATE_HISTORY>. Build on their insights, address gaps, challenge assumptions if needed, and refine the collective recommendation.'
 }
 
 Be concise but thorough. Focus on actionable insights.`

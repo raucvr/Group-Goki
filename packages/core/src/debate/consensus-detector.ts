@@ -1,5 +1,6 @@
 import type { ModelRouter } from '../router/model-router.js'
 import type { ChatMessage } from '@group-goki/shared'
+import { escapeXml } from '../utils/prompt-sanitizer.js'
 
 export interface ConsensusResult {
   readonly hasConsensus: boolean
@@ -44,24 +45,39 @@ function buildConsensusPrompt(
   debateHistory: readonly ChatMessage[],
   currentRoundResponses: readonly ChatMessage[],
 ): string {
-  const historyText = debateHistory
-    .map((m) => `[${m.role}${m.modelId ? ` - ${m.modelId}` : ''}]: ${m.content}`)
-    .join('\n\n')
+  const historyText =
+    debateHistory.length > 0
+      ? `<DEBATE_HISTORY>
+${debateHistory
+  .map(
+    (m) =>
+      `<HISTORY_ENTRY role="${escapeXml(m.role)}" model="${escapeXml(m.modelId || '')}">
+${escapeXml(m.content)}
+</HISTORY_ENTRY>`,
+  )
+  .join('\n')}
+</DEBATE_HISTORY>`
+      : '<DEBATE_HISTORY>None</DEBATE_HISTORY>'
 
-  const currentText = currentRoundResponses
-    .map((m) => `[${m.metadata?.debateRole ?? m.modelId}]: ${m.content}`)
-    .join('\n\n')
+  const currentText = `<CURRENT_ROUND>
+${currentRoundResponses
+  .map(
+    (m) =>
+      `<RESPONSE role="${escapeXml(String(m.metadata?.debateRole ?? m.modelId))}">
+${escapeXml(m.content)}
+</RESPONSE>`,
+  )
+  .join('\n')}
+</CURRENT_ROUND>`
 
   return `You are a consensus detector for an executive advisory team debate.
 
-**Debate History:**
 ${historyText}
 
-**Current Round Responses:**
 ${currentText}
 
 **Your Task:**
-Analyze the current round responses and determine if the gokis have reached consensus.
+Analyze the responses in <CURRENT_ROUND> and determine if the gokis have reached consensus.
 
 **Consensus Criteria:**
 1. Agreement on core recommendations (not necessarily identical wording)

@@ -36,6 +36,9 @@ export interface DiscussionEvent {
   readonly debateResult?: DebateResult
   readonly debateRound?: DebateRound
   readonly debateSessionId?: string
+  readonly conversationId?: string
+  readonly participants?: readonly { role: GokiRole; modelId: string }[]
+  readonly maxRounds?: number
   readonly phase?: string
   readonly detail?: string
   readonly error?: string
@@ -136,10 +139,13 @@ async function handleDebateMode(
       }),
     )
 
-    // Emit debate started event
+    // Emit debate started event with all required fields per WsDebateStartedSchema
     onEvent({
       type: 'debate_started',
       debateSessionId,
+      conversationId,
+      participants,
+      maxRounds: 5, // Default from DebateEngine config
     })
 
     // Initiate debate

@@ -12,6 +12,7 @@ import {
   createParallelRunner,
   createJudgeEngine,
   createModelLeaderboard,
+  createModelLeaderboardFromPersistence,
   createBattleRoyaleOrchestrator,
   createExpertiseRepository,
   createRosterRepository,
@@ -39,7 +40,7 @@ export interface AppState {
   registry: ModelRegistry
 }
 
-export function createApp() {
+export async function createApp() {
   const env = loadEnv()
 
   // Database
@@ -63,18 +64,15 @@ export function createApp() {
   // Cost Tracker
   let costTracker = createCostTracker()
 
-  // Leaderboard - Load from database
-  let leaderboard = createModelLeaderboard()
-
-  // Async initialization of leaderboard from database
-  expertiseRepo
-    .loadAllAsLeaderboardEntries()
-    .then((entries: readonly import('@group-goki/shared').ModelLeaderboardEntry[]) => {
-      leaderboard = createModelLeaderboard(entries)
-    })
-    .catch((error: Error) => {
-      console.error('Failed to load leaderboard from database:', error)
-    })
+  // Leaderboard - Load from database with full score history
+  let leaderboard: ModelLeaderboard
+  try {
+    const persistenceEntries = await expertiseRepo.loadAllForPersistence()
+    leaderboard = createModelLeaderboardFromPersistence(persistenceEntries)
+  } catch (error) {
+    console.error('Failed to load leaderboard from database:', error)
+    leaderboard = createModelLeaderboard()
+  }
 
   // Goki Roster Service
   const rosterService = createGokiRosterService({
@@ -194,25 +192,33 @@ export function createApp() {
 }
 
 /**
- * Persist leaderboard entries to database
+ * Persist leaderboard entries to database with full score history.
+ * Uses getEntriesForPersistence() to preserve individual scores.
  */
 async function persistLeaderboardToDb(
   leaderboard: ModelLeaderboard,
   expertiseRepo: ReturnType<typeof createExpertiseRepository>,
 ): Promise<void> {
-  const entries = leaderboard.getEntries()
+  const entries = leaderboard.getEntriesForPersistence()
   const timestamp = new Date().toISOString()
 
   for (const entry of entries) {
+    const avgScore =
+      entry.scores.length > 0
+        ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length
+        : 0
+    const winRate =
+      entry.totalEvaluations > 0 ? entry.totalWins / entry.totalEvaluations : 0
+
     await expertiseRepo.save({
       id: `${entry.modelId}:${entry.category}`,
       modelId: entry.modelId,
       category: entry.category,
-      scores: [entry.averageScore], // Store as single-item array
+      scores: entry.scores, // Preserve full score history
       totalWins: entry.totalWins,
       totalEvaluations: entry.totalEvaluations,
-      avgScore: entry.averageScore,
-      winRate: entry.winRate,
+      avgScore: Math.round(avgScore * 10) / 10,
+      winRate,
       lastEvaluatedAt: entry.lastEvaluatedAt,
       createdAt: timestamp,
       updatedAt: timestamp,

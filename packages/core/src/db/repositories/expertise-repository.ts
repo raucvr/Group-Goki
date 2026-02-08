@@ -1,8 +1,9 @@
 import { eq, and, desc } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { modelDomainExpertise } from '../schema.js'
-import { createId, now } from '@group-goki/shared'
+import { now } from '@group-goki/shared'
 import type { ModelLeaderboardEntry } from '@group-goki/shared'
+import type { LeaderboardPersistenceEntry } from '../../battle-royale/leaderboard.js'
 
 export interface ExpertiseRecord {
   readonly id: string
@@ -26,6 +27,11 @@ export interface ExpertiseRepository {
   ) => Promise<ExpertiseRecord | undefined>
   readonly findByCategory: (category: string) => Promise<readonly ExpertiseRecord[]>
   readonly loadAllAsLeaderboardEntries: () => Promise<readonly ModelLeaderboardEntry[]>
+  /**
+   * Load all entries with full score history for leaderboard persistence.
+   * Use this instead of loadAllAsLeaderboardEntries() to preserve score distribution.
+   */
+  readonly loadAllForPersistence: () => Promise<readonly LeaderboardPersistenceEntry[]>
   readonly hasExpertForDomain: (
     category: string,
     options?: {
@@ -134,6 +140,19 @@ export function createExpertiseRepository(
         avgResponseTimeMs: 0, // Not stored in expertise table
         avgTokenCost: 0, // Not stored in expertise table
         trend: 'stable' as const,
+        lastEvaluatedAt: row.lastEvaluatedAt,
+      }))
+    },
+
+    async loadAllForPersistence() {
+      const rows = await db.select().from(modelDomainExpertise)
+
+      return rows.map((row) => ({
+        modelId: row.modelId,
+        category: row.category,
+        scores: JSON.parse(row.scores) as number[],
+        totalWins: row.totalWins,
+        totalEvaluations: row.totalEvaluations,
         lastEvaluatedAt: row.lastEvaluatedAt,
       }))
     },
