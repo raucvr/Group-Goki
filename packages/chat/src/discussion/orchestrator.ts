@@ -101,6 +101,7 @@ export function createDiscussionOrchestrator(
           content,
           userMessage,
           recentContext,
+          rosterAssignments!, // Already fetched, pass to avoid redundant call
           onEvent,
         )
       } else {
@@ -125,13 +126,13 @@ async function handleDebateMode(
   content: string,
   userMessage: ChatMessage,
   recentContext: readonly { role: string; content: string }[],
+  rosterAssignments: ReadonlyMap<GokiRole, string>,
   onEvent: (event: DiscussionEvent) => void,
 ): Promise<ConversationManager> {
   const debateSessionId = createId()
 
   try {
-    // Get roster assignments for participants
-    const rosterAssignments = await deps.rosterService!.getAllAssignments()
+    // Use passed roster assignments (already fetched in handleUserMessage)
     const participants = Array.from(rosterAssignments.entries()).map(
       ([role, modelId]: [GokiRole, string]) => ({
         role,
@@ -408,10 +409,14 @@ function formatDebateRecommendation(result: DebateResult): string {
     parts.push('')
   }
 
-  // Participants
-  const participants = result.rounds
-    .flatMap((r: DebateRound) => r.responses.map((resp: ChatMessage) => resp.modelId))
-    .filter((id: string | undefined, idx: number, arr: (string | undefined)[]) => arr.indexOf(id) === idx)
+  // Participants - use Set for O(n) deduplication instead of O(n²) indexOf
+  const participants = [
+    ...new Set(
+      result.rounds
+        .flatMap((r: DebateRound) => r.responses.map((resp: ChatMessage) => resp.modelId))
+        .filter((id): id is string => id !== undefined),
+    ),
+  ]
   parts.push(`**Participants**: ${participants.join(', ')}`)
 
   return parts.join('\n')

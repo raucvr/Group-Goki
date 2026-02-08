@@ -106,12 +106,35 @@ function parseConsensusResponse(content: string): ConsensusResult {
 
     const parsed = JSON.parse(jsonStr!)
 
+    // Validate and sanitize all fields to prevent LLM output manipulation
+    const hasConsensus =
+      typeof parsed.hasConsensus === 'boolean' ? parsed.hasConsensus : false
+
+    const rawScore =
+      typeof parsed.consensusScore === 'number' ? parsed.consensusScore : 0
+    const consensusScore = Math.max(0, Math.min(1, rawScore)) // Clamp to 0-1 range
+
+    const reasoning =
+      typeof parsed.reasoning === 'string' ? parsed.reasoning.slice(0, 2000) : ''
+
+    const areasOfAgreement = Array.isArray(parsed.areasOfAgreement)
+      ? parsed.areasOfAgreement
+          .filter((x: unknown): x is string => typeof x === 'string')
+          .slice(0, 20)
+      : []
+
+    const areasOfDisagreement = Array.isArray(parsed.areasOfDisagreement)
+      ? parsed.areasOfDisagreement
+          .filter((x: unknown): x is string => typeof x === 'string')
+          .slice(0, 20)
+      : []
+
     return {
-      hasConsensus: parsed.hasConsensus ?? false,
-      consensusScore: parsed.consensusScore ?? 0,
-      reasoning: parsed.reasoning ?? '',
-      areasOfAgreement: parsed.areasOfAgreement ?? [],
-      areasOfDisagreement: parsed.areasOfDisagreement ?? [],
+      hasConsensus,
+      consensusScore,
+      reasoning,
+      areasOfAgreement,
+      areasOfDisagreement,
     }
   } catch {
     // Fallback: no consensus if parse fails
