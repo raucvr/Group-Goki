@@ -52,7 +52,7 @@ export type {
 } from './db/repositories/roster-repository.js'
 
 // Goki Roster
-export { createGokiRosterService, ROLE_TO_CATEGORY } from './goki-roster/index.js'
+export { createGokiRosterService } from './goki-roster/index.js'
 export type { GokiRosterService } from './goki-roster/index.js'
 
 // Debate Engine
@@ -65,40 +65,6 @@ export type {
   ConsensusDetector,
   ConsensusResult,
 } from './debate/index.js'
-
-// Task Analyzer
-export { createTaskAnalyzer } from './task-analyzer/analyzer.js'
-export type { TaskAnalyzer } from './task-analyzer/analyzer.js'
-
-// Battle Royale
-export { createParallelRunner } from './battle-royale/parallel-runner.js'
-export type {
-  ParallelRunner,
-  ParallelRunResult,
-  ParallelRunItem,
-  ParallelRunSuccess,
-  ParallelRunError,
-} from './battle-royale/parallel-runner.js'
-
-export { createJudgeEngine } from './battle-royale/judge.js'
-export type { JudgeEngine, JudgeResult } from './battle-royale/judge.js'
-
-export {
-  createModelLeaderboard,
-  createModelLeaderboardFromPersistence,
-} from './battle-royale/leaderboard.js'
-export type {
-  ModelLeaderboard,
-  ModelProfile,
-  LeaderboardPersistenceEntry,
-} from './battle-royale/leaderboard.js'
-
-export { createBattleRoyaleOrchestrator } from './battle-royale/orchestrator.js'
-export type {
-  BattleRoyaleOrchestrator,
-  BattleRoyaleResult,
-  BattleRoyaleOptions,
-} from './battle-royale/orchestrator.js'
 
 // Utils
 export { runWithConcurrencyLimit } from './utils/concurrency.js'

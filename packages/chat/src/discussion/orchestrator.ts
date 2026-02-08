@@ -1,46 +1,32 @@
 import type { ChatMessage } from '@group-goki/shared'
 import { createId, now } from '@group-goki/shared'
 import type {
-  BattleRoyaleOrchestrator,
-  BattleRoyaleResult,
-  ModelLeaderboard,
   ModelRegistry,
   DebateEngine,
   DebateResult,
   DebateRound,
   GokiRosterService,
   GokiRole,
+  ModelRouter,
 } from '@group-goki/core'
 import type { ConversationManager } from '../conversation/manager.js'
-import type { TurnManager, TurnDecision } from '../turns/turn-manager.js'
-import {
-  parseMentions,
-  extractMentionedModelIds,
-  parseUnifiedMentions,
-  type RoleMention,
-} from '../mentions/parser.js'
 
 export interface DiscussionEvent {
   readonly type:
     | 'user_message'
     | 'model_response'
-    | 'battle_progress'
-    | 'evaluation'
     | 'debate_started'
     | 'goki_response'
     | 'debate_round_complete'
     | 'consensus_reached'
     | 'error'
   readonly message?: ChatMessage
-  readonly battleResult?: BattleRoyaleResult
   readonly debateResult?: DebateResult
   readonly debateRound?: DebateRound
   readonly debateSessionId?: string
   readonly conversationId?: string
   readonly participants?: readonly { role: GokiRole; modelId: string }[]
   readonly maxRounds?: number
-  readonly phase?: string
-  readonly detail?: string
   readonly error?: string
 }
 
@@ -54,12 +40,11 @@ export interface DiscussionOrchestrator {
 
 export interface DiscussionOrchestratorDeps {
   readonly getConversationManager: () => ConversationManager
-  readonly battleRoyale: BattleRoyaleOrchestrator
-  readonly turnManager: TurnManager
-  readonly getLeaderboard: () => ModelLeaderboard
   readonly getRegistry: () => ModelRegistry
   readonly debateEngine?: DebateEngine
   readonly rosterService?: GokiRosterService
+  readonly router?: ModelRouter
+  readonly defaultModelId?: string
   readonly memoryLookup?: (query: string) => Promise<string | undefined>
 }
 
@@ -82,7 +67,7 @@ export function createDiscussionOrchestrator(
       // 2. Get conversation context
       const recentContext = manager.getRecentContext(conversationId, 10)
 
-      // 3. Check if debate mode is enabled
+      // 3. Check if debate mode is enabled (gokis configured)
       const rosterAssignments = deps.rosterService
         ? await deps.rosterService.getAllAssignments()
         : undefined
@@ -92,7 +77,7 @@ export function createDiscussionOrchestrator(
         rosterAssignments &&
         rosterAssignments.size > 0
 
-      // 4. Execute debate mode or fallback to Battle Royale
+      // 4. Execute debate mode or fallback to single-model response
       if (useDebateMode) {
         return handleDebateMode(
           deps,
@@ -101,11 +86,11 @@ export function createDiscussionOrchestrator(
           content,
           userMessage,
           recentContext,
-          rosterAssignments!, // Already fetched, pass to avoid redundant call
+          rosterAssignments!,
           onEvent,
         )
       } else {
-        return handleBattleRoyaleMode(
+        return handleSingleModelResponse(
           deps,
           manager,
           conversationId,
@@ -132,7 +117,7 @@ async function handleDebateMode(
   const debateSessionId = createId()
 
   try {
-    // Use passed roster assignments (already fetched in handleUserMessage)
+    // Build participant list from roster
     const participants = Array.from(rosterAssignments.entries()).map(
       ([role, modelId]: [GokiRole, string]) => ({
         role,
@@ -140,13 +125,13 @@ async function handleDebateMode(
       }),
     )
 
-    // Emit debate started event with all required fields per WsDebateStartedSchema
+    // Emit debate started event
     onEvent({
       type: 'debate_started',
       debateSessionId,
       conversationId,
       participants,
-      maxRounds: 5, // Default from DebateEngine config
+      maxRounds: 5,
     })
 
     // Initiate debate
@@ -202,10 +187,10 @@ async function handleDebateMode(
     return manager
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
-    onEvent({ type: 'error', error: `Debate failed: ${errorMsg}. Falling back to Battle Royale.` })
+    onEvent({ type: 'error', error: `Debate failed: ${errorMsg}. Using single model.` })
 
-    // Fallback to Battle Royale on debate error
-    return handleBattleRoyaleMode(
+    // Fallback to single model response on debate error
+    return handleSingleModelResponse(
       deps,
       manager,
       conversationId,
@@ -217,7 +202,11 @@ async function handleDebateMode(
   }
 }
 
-async function handleBattleRoyaleMode(
+/**
+ * Simple single-model response when no gokis are configured.
+ * Uses the default model to respond directly.
+ */
+async function handleSingleModelResponse(
   deps: DiscussionOrchestratorDeps,
   manager: ConversationManager,
   conversationId: string,
@@ -226,104 +215,55 @@ async function handleBattleRoyaleMode(
   recentContext: readonly { role: string; content: string }[],
   onEvent: (event: DiscussionEvent) => void,
 ): Promise<ConversationManager> {
-  // Parse mentions
-  const allModelIds = deps.getRegistry().getActive().map((m) => m.id)
-  const mentions = parseMentions(content, allModelIds)
-  const mentionedIds = extractMentionedModelIds(mentions)
+  // Get default model
+  const modelId = deps.defaultModelId ?? 'anthropic/claude-sonnet-4'
 
-  // Run Battle Royale
-  let battleResult: BattleRoyaleResult
-  try {
-    battleResult = await deps.battleRoyale.execute(
-      content,
-      conversationId,
-      recentContext,
-      {
-        onProgress: (phase, detail, models) => {
-          onEvent({ type: 'battle_progress', phase, detail })
-        },
-      },
-    )
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error)
-    onEvent({ type: 'error', error: errorMsg })
+  // If no router, return error
+  if (!deps.router) {
+    onEvent({ type: 'error', error: 'No model router configured. Please configure goki roster.' })
     return manager
   }
 
-  // Emit evaluation results
-  onEvent({ type: 'evaluation', battleResult })
+  try {
+    const provider = deps.router.getProvider(modelId)
+    if (!provider) {
+      onEvent({ type: 'error', error: `No provider found for model: ${modelId}` })
+      return manager
+    }
 
-  // Determine who responds via Turn Manager
-  const specialistIds = getSpecialists(
-    deps.getLeaderboard(),
-    battleResult.task.category,
-  )
+    // Build messages for completion
+    const messages = [
+      ...recentContext.map((ctx) => ({
+        role: ctx.role as 'user' | 'assistant',
+        content: ctx.content,
+      })),
+      { role: 'user' as const, content },
+    ]
 
-  const decisions = deps.turnManager.decide({
-    mentionedModelIds: mentionedIds,
-    battleWinnerModelId: battleResult.winnerModelId,
-    specialistModelIds: specialistIds,
-    allEvaluations: battleResult.allEvaluations.map((e) => ({
-      modelId: e.modelId,
-      score: e.overallScore,
-    })),
-  })
+    const result = await provider.complete({
+      modelId,
+      messages,
+      maxTokens: 4096,
+      temperature: 0.7,
+    })
 
-  // Add winner response as primary message
-  const winnerMessage = createChatMessage({
-    conversationId,
-    role: 'model',
-    modelId: battleResult.winnerModelId,
-    content: battleResult.winnerResponse,
-    parentMessageId: userMessage.id,
-    evaluationScore: battleResult.allEvaluations.find(
-      (e) => e.modelId === battleResult.winnerModelId,
-    )?.overallScore,
-    mentions,
-  })
-  manager = manager.addMessage(winnerMessage)
-  onEvent({ type: 'model_response', message: winnerMessage })
-
-  // Add follow-up responses from other decided models
-  const followUpDecisions = decisions.filter(
-    (d) => d.modelId !== battleResult.winnerModelId,
-  )
-
-  for (const decision of followUpDecisions) {
-    const followUpResponse = battleResult.allResponses.find(
-      (r) => r.modelId === decision.modelId,
-    )
-    if (!followUpResponse) continue
-
-    const followUpMessage = createChatMessage({
+    // Add response message
+    const responseMessage = createChatMessage({
       conversationId,
       role: 'model',
-      modelId: decision.modelId,
-      content: followUpResponse.content,
+      modelId,
+      content: result.content,
       parentMessageId: userMessage.id,
-      evaluationScore: battleResult.allEvaluations.find(
-        (e) => e.modelId === decision.modelId,
-      )?.overallScore,
-      metadata: { turnReason: decision.reason },
     })
-    manager = manager.addMessage(followUpMessage)
-    onEvent({ type: 'model_response', message: followUpMessage })
-  }
+    manager = manager.addMessage(responseMessage)
+    onEvent({ type: 'model_response', message: responseMessage })
 
-  // Add consensus summary if multiple responses
-  if (battleResult.consensus && battleResult.allResponses.length > 1) {
-    const consensusMessage = createChatMessage({
-      conversationId,
-      role: 'system',
-      content: formatConsensus(battleResult),
-      parentMessageId: userMessage.id,
-      metadata: { type: 'consensus_summary' },
-    })
-    manager = manager.addMessage(consensusMessage)
-    onEvent({ type: 'model_response', message: consensusMessage })
+    return manager
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    onEvent({ type: 'error', error: `Model response failed: ${errorMsg}` })
+    return manager
   }
-
-  return manager
 }
 
 function createChatMessage(params: {
@@ -350,51 +290,18 @@ function createChatMessage(params: {
   }
 }
 
-const TOP_SPECIALIST_COUNT = 3
-
-function getSpecialists(
-  leaderboard: ModelLeaderboard,
-  category: string,
-): readonly string[] {
-  return leaderboard
-    .getTopModels(category, TOP_SPECIALIST_COUNT)
-    .map((m) => m.modelId)
-}
-
-function formatConsensus(result: BattleRoyaleResult): string {
-  const parts: string[] = []
-
-  if (result.consensus) {
-    parts.push(`**Consensus**: ${result.consensus}`)
-  }
-  if (result.divergences) {
-    parts.push(`**Divergences**: ${result.divergences}`)
-  }
-
-  const rankings = [...result.allEvaluations]
-    .sort((a, b) => a.rank - b.rank)
-    .map((e) => `${e.rank}. ${e.modelId} (${e.overallScore}/100)`)
-
-  if (rankings.length > 0) {
-    parts.push(`**Rankings**: ${rankings.join(' | ')}`)
-  }
-
-  return parts.join('\n\n')
-}
-
 function formatDebateRecommendation(result: DebateResult): string {
   const parts: string[] = []
 
-  parts.push(`## Executive Advisory Team Recommendation`)
+  parts.push(`## Goki Discussion Summary`)
   parts.push('')
 
   // Status
-  const statusEmoji = result.status === 'consensus_reached' ? '✅' : '⏱️'
   const statusText =
     result.status === 'consensus_reached'
       ? `Consensus Reached (${Math.round((result.consensusScore ?? 0) * 100)}%)`
-      : `Maximum Rounds Reached (${result.totalRounds} rounds)`
-  parts.push(`**Status**: ${statusEmoji} ${statusText}`)
+      : `Discussion Complete (${result.totalRounds} rounds)`
+  parts.push(`**Status**: ${statusText}`)
   parts.push('')
 
   // Final recommendation
@@ -409,7 +316,7 @@ function formatDebateRecommendation(result: DebateResult): string {
     parts.push('')
   }
 
-  // Participants - use Set for O(n) deduplication instead of O(n²) indexOf
+  // Participants
   const participants = [
     ...new Set(
       result.rounds
