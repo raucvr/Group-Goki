@@ -77,6 +77,48 @@ export const WsAuthenticatedEventSchema = z.object({
   userId: z.string(),
 })
 
+// Debate events
+export const WsDebateStartedSchema = z.object({
+  type: z.literal('debate_started'),
+  conversationId: z.string(),
+  debateSessionId: z.string(),
+  participants: z.array(
+    z.object({
+      role: z.enum(['strategy', 'tech', 'product', 'execution']),
+      modelId: z.string(),
+    }),
+  ),
+  maxRounds: z.number(),
+})
+
+export const WsGokiResponseSchema = z.object({
+  type: z.literal('goki_response'),
+  conversationId: z.string(),
+  debateSessionId: z.string(),
+  role: z.enum(['strategy', 'tech', 'product', 'execution']),
+  modelId: z.string(),
+  message: ChatMessageSchema,
+  roundNumber: z.number(),
+})
+
+export const WsDebateRoundCompleteSchema = z.object({
+  type: z.literal('debate_round_complete'),
+  conversationId: z.string(),
+  debateSessionId: z.string(),
+  roundNumber: z.number(),
+  consensusScore: z.number().optional(),
+})
+
+export const WsConsensusReachedSchema = z.object({
+  type: z.literal('consensus_reached'),
+  conversationId: z.string(),
+  debateSessionId: z.string(),
+  totalRounds: z.number(),
+  consensusScore: z.number(),
+  finalRecommendation: z.string(),
+  areasOfAgreement: z.array(z.string()),
+})
+
 export const WsErrorEventSchema = z.object({
   type: z.literal('error'),
   message: z.string(),
@@ -89,6 +131,10 @@ export const WsOutgoingEventSchema = z.discriminatedUnion('type', [
   WsStreamEventSchema,
   WsBattleProgressSchema,
   WsEvaluationResultSchema,
+  WsDebateStartedSchema,
+  WsGokiResponseSchema,
+  WsDebateRoundCompleteSchema,
+  WsConsensusReachedSchema,
   WsErrorEventSchema,
 ])
 export type WsOutgoingEvent = z.infer<typeof WsOutgoingEventSchema>

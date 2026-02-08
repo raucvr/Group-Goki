@@ -8,6 +8,19 @@ export interface ModelProfile {
   readonly totalEvaluations: number
 }
 
+/**
+ * Entry with full score history for persistence.
+ * Preserves all individual scores instead of just the average.
+ */
+export interface LeaderboardPersistenceEntry {
+  readonly modelId: string
+  readonly category: string
+  readonly scores: readonly number[]
+  readonly totalWins: number
+  readonly totalEvaluations: number
+  readonly lastEvaluatedAt: string
+}
+
 export interface ModelLeaderboard {
   readonly record: (evaluation: EvaluationResult, category: string) => ModelLeaderboard
   readonly getTopModels: (category: string, limit?: number) => readonly ModelLeaderboardEntry[]
@@ -15,6 +28,11 @@ export interface ModelLeaderboard {
   readonly getSpecializations: (modelId: string) => readonly string[]
   readonly shouldRetain: (modelId: string) => boolean
   readonly getEntries: () => readonly ModelLeaderboardEntry[]
+  /**
+   * Get entries with full score history for database persistence.
+   * Use this instead of getEntries() when persisting to avoid data loss.
+   */
+  readonly getEntriesForPersistence: () => readonly LeaderboardPersistenceEntry[]
   readonly selectCandidates: (
     category: string,
     count: number,
@@ -24,6 +42,13 @@ export interface ModelLeaderboard {
       readonly allModelIds?: readonly string[]
     },
   ) => readonly string[]
+  readonly hasExpertForDomain: (
+    category: string,
+    options?: {
+      readonly minEvaluations?: number
+      readonly minAvgScore?: number
+    },
+  ) => boolean
 }
 
 interface InternalEntry {
@@ -56,6 +81,31 @@ export function createModelLeaderboard(
         totalGames: e.totalEvaluations,
         responseTimes: [e.avgResponseTimeMs],
         tokenCosts: [e.avgTokenCost],
+        lastEvaluatedAt: e.lastEvaluatedAt,
+      }]
+    }),
+  )
+  return buildLeaderboard(data)
+}
+
+/**
+ * Create a leaderboard from persistence entries with full score history.
+ * Use this when loading from DB to preserve score distribution.
+ */
+export function createModelLeaderboardFromPersistence(
+  persistenceEntries: readonly LeaderboardPersistenceEntry[],
+): ModelLeaderboard {
+  const data = new Map<string, InternalEntry>(
+    persistenceEntries.map((e) => {
+      const key = `${e.modelId}:${e.category}`
+      return [key, {
+        modelId: e.modelId,
+        category: e.category,
+        scores: e.scores,
+        wins: e.totalWins,
+        totalGames: e.totalEvaluations,
+        responseTimes: [], // Not persisted
+        tokenCosts: [], // Not persisted
         lastEvaluatedAt: e.lastEvaluatedAt,
       }]
     }),
@@ -190,6 +240,17 @@ function buildLeaderboard(
       return [...data.values()].map(toLeaderboardEntry)
     },
 
+    getEntriesForPersistence() {
+      return [...data.values()].map((entry) => ({
+        modelId: entry.modelId,
+        category: entry.category,
+        scores: entry.scores,
+        totalWins: entry.wins,
+        totalEvaluations: entry.totalGames,
+        lastEvaluatedAt: entry.lastEvaluatedAt,
+      }))
+    },
+
     selectCandidates(category, count, options = {}) {
       const { includeChallenger = true, allModelIds = [] } = options
 
@@ -213,6 +274,16 @@ function buildLeaderboard(
       }
 
       return [...selected].slice(0, count + 1) // Allow one extra for challenger
+    },
+
+    hasExpertForDomain(category, options = {}) {
+      const { minEvaluations = 3, minAvgScore = 70 } = options
+      const topModels = this.getTopModels(category, 1)
+
+      if (topModels.length === 0) return false
+
+      const topModel = topModels[0]!
+      return topModel.totalEvaluations >= minEvaluations && topModel.averageScore >= minAvgScore
     },
   }
 }

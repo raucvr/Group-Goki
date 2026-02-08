@@ -101,3 +101,62 @@ export const costRecords = sqliteTable('cost_records', {
   costUsd: real('cost_usd').notNull(),
   timestamp: text('timestamp').notNull(),
 })
+
+// Model domain expertise (leaderboard persistence)
+export const modelDomainExpertise = sqliteTable('model_domain_expertise', {
+  id: text('id').primaryKey(),
+  modelId: text('model_id').notNull(),
+  category: text('category').notNull(),
+  scores: text('scores').notNull(), // JSON array
+  totalWins: integer('total_wins').notNull().default(0),
+  totalEvaluations: integer('total_evaluations').notNull().default(0),
+  avgScore: real('avg_score').notNull().default(0),
+  winRate: real('win_rate').notNull().default(0),
+  lastEvaluatedAt: text('last_evaluated_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+// Goki roster (role assignments)
+export const gokiRoster = sqliteTable('goki_roster', {
+  id: text('id').primaryKey(),
+  role: text('role').notNull().unique(),
+  modelId: text('model_id').notNull(),
+  assignmentType: text('assignment_type').notNull(), // 'manual' | 'auto'
+  assignedAt: text('assigned_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+// Debate sessions
+export const debateSessions = sqliteTable('debate_sessions', {
+  id: text('id').primaryKey(),
+  conversationId: text('conversation_id')
+    .notNull()
+    .references(() => conversations.id),
+  userMessageId: text('user_message_id')
+    .notNull()
+    .references(() => messages.id),
+  status: text('status').notNull(),
+  totalRounds: integer('total_rounds').notNull().default(0),
+  maxRounds: integer('max_rounds').notNull().default(5),
+  consensusThreshold: real('consensus_threshold').notNull().default(0.8),
+  finalRecommendation: text('final_recommendation'),
+  createdAt: text('created_at').notNull(),
+  completedAt: text('completed_at'),
+})
+
+// Debate rounds
+export const debateRounds = sqliteTable('debate_rounds', {
+  id: text('id').primaryKey(),
+  debateSessionId: text('debate_session_id')
+    .notNull()
+    .references(() => debateSessions.id),
+  roundNumber: integer('round_number').notNull(),
+  gokiRole: text('goki_role').notNull(),
+  modelId: text('model_id').notNull(),
+  messageId: text('message_id')
+    .notNull()
+    .references(() => messages.id),
+  consensusScore: real('consensus_score'),
+  createdAt: text('created_at').notNull(),
+})

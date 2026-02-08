@@ -12,5 +12,5 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Claude Code local settings
-.claude/settings.local.json
+# Claude Code local settings (entire directory)
+.claude/

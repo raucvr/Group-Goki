@@ -12,7 +12,13 @@ import {
   createParallelRunner,
   createJudgeEngine,
   createModelLeaderboard,
+  createModelLeaderboardFromPersistence,
   createBattleRoyaleOrchestrator,
+  createExpertiseRepository,
+  createRosterRepository,
+  createGokiRosterService,
+  createConsensusDetector,
+  createDebateEngine,
   DEFAULT_MODELS,
 } from '@group-goki/core'
 import {
@@ -34,11 +40,15 @@ export interface AppState {
   registry: ModelRegistry
 }
 
-export function createApp() {
+export async function createApp() {
   const env = loadEnv()
 
   // Database
   const { db, close: closeDb } = createDatabase(env.DATABASE_URL)
+
+  // Repositories
+  const expertiseRepo = createExpertiseRepository(db as any)
+  const rosterRepo = createRosterRepository(db as any)
 
   // Model Registry
   let registry = createModelRegistry()
@@ -54,8 +64,21 @@ export function createApp() {
   // Cost Tracker
   let costTracker = createCostTracker()
 
-  // Leaderboard
-  let leaderboard = createModelLeaderboard()
+  // Leaderboard - Load from database with full score history
+  let leaderboard: ModelLeaderboard
+  try {
+    const persistenceEntries = await expertiseRepo.loadAllForPersistence()
+    leaderboard = createModelLeaderboardFromPersistence(persistenceEntries)
+  } catch (error) {
+    console.error('Failed to load leaderboard from database:', error)
+    leaderboard = createModelLeaderboard()
+  }
+
+  // Goki Roster Service
+  const rosterService = createGokiRosterService({
+    rosterRepo,
+    expertiseRepo,
+  })
 
   // Battle Royale components
   const taskAnalyzer = createTaskAnalyzer(router, env.JUDGE_MODEL_ID)
@@ -70,6 +93,24 @@ export function createApp() {
     registry,
     onLeaderboardUpdate: (updated) => {
       leaderboard = updated
+      // Persist leaderboard updates to database
+      persistLeaderboardToDb(updated, expertiseRepo).catch((error) => {
+        console.error('Failed to persist leaderboard to database:', error)
+      })
+    },
+  })
+
+  // Debate Engine components
+  const consensusDetector = createConsensusDetector(router, env.JUDGE_MODEL_ID)
+  const debateEngine = createDebateEngine({
+    router,
+    rosterService,
+    consensusDetector,
+    config: {
+      maxRounds: 5,
+      consensusThreshold: 0.8,
+      enableConsensusCheck: true,
+      turnOrder: ['strategy', 'tech', 'product', 'execution'],
     },
   })
 
@@ -84,6 +125,8 @@ export function createApp() {
     turnManager,
     getLeaderboard: () => leaderboard,
     getRegistry: () => registry,
+    debateEngine,
+    rosterService,
     memoryLookup: async (query) => {
       const integrator = createMemoryIntegrator(currentMemoryManager)
       const { context, manager } = integrator.lookupContext(query)
@@ -145,5 +188,40 @@ export function createApp() {
     env,
     getConversationManager: () => conversationManager,
     setConversationManager: (m: ConversationManager) => { conversationManager = m },
+  }
+}
+
+/**
+ * Persist leaderboard entries to database with full score history.
+ * Uses getEntriesForPersistence() to preserve individual scores.
+ */
+async function persistLeaderboardToDb(
+  leaderboard: ModelLeaderboard,
+  expertiseRepo: ReturnType<typeof createExpertiseRepository>,
+): Promise<void> {
+  const entries = leaderboard.getEntriesForPersistence()
+  const timestamp = new Date().toISOString()
+
+  for (const entry of entries) {
+    const avgScore =
+      entry.scores.length > 0
+        ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length
+        : 0
+    const winRate =
+      entry.totalEvaluations > 0 ? entry.totalWins / entry.totalEvaluations : 0
+
+    await expertiseRepo.save({
+      id: `${entry.modelId}:${entry.category}`,
+      modelId: entry.modelId,
+      category: entry.category,
+      scores: entry.scores, // Preserve full score history
+      totalWins: entry.totalWins,
+      totalEvaluations: entry.totalEvaluations,
+      avgScore: Math.round(avgScore * 10) / 10,
+      winRate,
+      lastEvaluatedAt: entry.lastEvaluatedAt,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
   }
 }
