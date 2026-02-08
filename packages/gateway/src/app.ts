@@ -13,6 +13,11 @@ import {
   createJudgeEngine,
   createModelLeaderboard,
   createBattleRoyaleOrchestrator,
+  createExpertiseRepository,
+  createRosterRepository,
+  createGokiRosterService,
+  createConsensusDetector,
+  createDebateEngine,
   DEFAULT_MODELS,
 } from '@group-goki/core'
 import {
@@ -40,6 +45,10 @@ export function createApp() {
   // Database
   const { db, close: closeDb } = createDatabase(env.DATABASE_URL)
 
+  // Repositories
+  const expertiseRepo = createExpertiseRepository(db as any)
+  const rosterRepo = createRosterRepository(db as any)
+
   // Model Registry
   let registry = createModelRegistry()
   for (const model of DEFAULT_MODELS) {
@@ -54,8 +63,24 @@ export function createApp() {
   // Cost Tracker
   let costTracker = createCostTracker()
 
-  // Leaderboard
+  // Leaderboard - Load from database
   let leaderboard = createModelLeaderboard()
+
+  // Async initialization of leaderboard from database
+  expertiseRepo
+    .loadAllAsLeaderboardEntries()
+    .then((entries: readonly import('@group-goki/shared').ModelLeaderboardEntry[]) => {
+      leaderboard = createModelLeaderboard(entries)
+    })
+    .catch((error: Error) => {
+      console.error('Failed to load leaderboard from database:', error)
+    })
+
+  // Goki Roster Service
+  const rosterService = createGokiRosterService({
+    rosterRepo,
+    expertiseRepo,
+  })
 
   // Battle Royale components
   const taskAnalyzer = createTaskAnalyzer(router, env.JUDGE_MODEL_ID)
@@ -70,6 +95,24 @@ export function createApp() {
     registry,
     onLeaderboardUpdate: (updated) => {
       leaderboard = updated
+      // Persist leaderboard updates to database
+      persistLeaderboardToDb(updated, expertiseRepo).catch((error) => {
+        console.error('Failed to persist leaderboard to database:', error)
+      })
+    },
+  })
+
+  // Debate Engine components
+  const consensusDetector = createConsensusDetector(router, env.JUDGE_MODEL_ID)
+  const debateEngine = createDebateEngine({
+    router,
+    rosterService,
+    consensusDetector,
+    config: {
+      maxRounds: 5,
+      consensusThreshold: 0.8,
+      enableConsensusCheck: true,
+      turnOrder: ['strategy', 'tech', 'product', 'execution'],
     },
   })
 
@@ -84,6 +127,8 @@ export function createApp() {
     turnManager,
     getLeaderboard: () => leaderboard,
     getRegistry: () => registry,
+    debateEngine,
+    rosterService,
     memoryLookup: async (query) => {
       const integrator = createMemoryIntegrator(currentMemoryManager)
       const { context, manager } = integrator.lookupContext(query)
@@ -145,5 +190,32 @@ export function createApp() {
     env,
     getConversationManager: () => conversationManager,
     setConversationManager: (m: ConversationManager) => { conversationManager = m },
+  }
+}
+
+/**
+ * Persist leaderboard entries to database
+ */
+async function persistLeaderboardToDb(
+  leaderboard: ModelLeaderboard,
+  expertiseRepo: ReturnType<typeof createExpertiseRepository>,
+): Promise<void> {
+  const entries = leaderboard.getEntries()
+  const timestamp = new Date().toISOString()
+
+  for (const entry of entries) {
+    await expertiseRepo.save({
+      id: `${entry.modelId}:${entry.category}`,
+      modelId: entry.modelId,
+      category: entry.category,
+      scores: [entry.averageScore], // Store as single-item array
+      totalWins: entry.totalWins,
+      totalEvaluations: entry.totalEvaluations,
+      avgScore: entry.averageScore,
+      winRate: entry.winRate,
+      lastEvaluatedAt: entry.lastEvaluatedAt,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
   }
 }

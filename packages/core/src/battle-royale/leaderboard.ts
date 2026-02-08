@@ -24,6 +24,13 @@ export interface ModelLeaderboard {
       readonly allModelIds?: readonly string[]
     },
   ) => readonly string[]
+  readonly hasExpertForDomain: (
+    category: string,
+    options?: {
+      readonly minEvaluations?: number
+      readonly minAvgScore?: number
+    },
+  ) => boolean
 }
 
 interface InternalEntry {
@@ -213,6 +220,16 @@ function buildLeaderboard(
       }
 
       return [...selected].slice(0, count + 1) // Allow one extra for challenger
+    },
+
+    hasExpertForDomain(category, options = {}) {
+      const { minEvaluations = 3, minAvgScore = 70 } = options
+      const topModels = this.getTopModels(category, 1)
+
+      if (topModels.length === 0) return false
+
+      const topModel = topModels[0]!
+      return topModel.totalEvaluations >= minEvaluations && topModel.averageScore >= minAvgScore
     },
   }
 }

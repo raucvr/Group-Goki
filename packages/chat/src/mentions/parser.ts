@@ -66,3 +66,67 @@ export function isModelMentioned(
 ): boolean {
   return mentions.some((m) => m.modelId === modelId)
 }
+
+/**
+ * Goki role mentions (@strategy, @tech, @product, @execution).
+ */
+export type RoleMention = 'strategy' | 'tech' | 'product' | 'execution'
+
+/**
+ * Parse @role mentions (strategy, tech, product, execution).
+ * Returns matched roles.
+ */
+export function parseRoleMentions(text: string): readonly RoleMention[] {
+  const roles: RoleMention[] = []
+  const roleRegex = /@(strategy|tech|product|execution)\b/gi
+  let match: RegExpExecArray | null
+
+  while ((match = roleRegex.exec(text)) !== null) {
+    const role = match[1]!.toLowerCase() as RoleMention
+    if (!roles.includes(role)) {
+      roles.push(role)
+    }
+  }
+
+  return roles
+}
+
+/**
+ * Parse both @model and @role mentions.
+ * Returns unified mention list with modelIds resolved from roles.
+ */
+export function parseUnifiedMentions(
+  text: string,
+  knownModelIds: readonly string[],
+  roleToModelMap: ReadonlyMap<RoleMention, string>,
+): readonly Mention[] {
+  const modelMentions = parseMentions(text, knownModelIds)
+  const roleMentions = parseRoleMentions(text)
+
+  // Convert role mentions to model mentions
+  const roleModelMentions: Mention[] = []
+  for (const role of roleMentions) {
+    const modelId = roleToModelMap.get(role)
+    if (modelId) {
+      // Find position of @role in text (approximate)
+      const rolePattern = new RegExp(`@${role}\\b`, 'i')
+      const match = rolePattern.exec(text)
+      if (match) {
+        roleModelMentions.push({
+          modelId,
+          startIndex: match.index,
+          endIndex: match.index + match[0].length,
+        })
+      }
+    }
+  }
+
+  // Merge and deduplicate
+  const allMentions = [...modelMentions, ...roleModelMentions]
+  const seen = new Set<string>()
+  return allMentions.filter((m) => {
+    if (seen.has(m.modelId)) return false
+    seen.add(m.modelId)
+    return true
+  })
+}

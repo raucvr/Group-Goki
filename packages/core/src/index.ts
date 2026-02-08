@@ -37,6 +37,35 @@ export type { MessageRepository } from './db/repositories/message-repository.js'
 export { createEvaluationRepository } from './db/repositories/evaluation-repository.js'
 export type { EvaluationRepository } from './db/repositories/evaluation-repository.js'
 
+export { createExpertiseRepository } from './db/repositories/expertise-repository.js'
+export type {
+  ExpertiseRepository,
+  ExpertiseRecord,
+} from './db/repositories/expertise-repository.js'
+
+export { createRosterRepository } from './db/repositories/roster-repository.js'
+export type {
+  RosterRepository,
+  RosterEntry,
+  GokiRole,
+  AssignmentType,
+} from './db/repositories/roster-repository.js'
+
+// Goki Roster
+export { createGokiRosterService, ROLE_TO_CATEGORY } from './goki-roster/index.js'
+export type { GokiRosterService } from './goki-roster/index.js'
+
+// Debate Engine
+export { createDebateEngine, createConsensusDetector } from './debate/index.js'
+export type {
+  DebateEngine,
+  DebateConfig,
+  DebateRound,
+  DebateResult,
+  ConsensusDetector,
+  ConsensusResult,
+} from './debate/index.js'
+
 // Task Analyzer
 export { createTaskAnalyzer } from './task-analyzer/analyzer.js'
 export type { TaskAnalyzer } from './task-analyzer/analyzer.js'
