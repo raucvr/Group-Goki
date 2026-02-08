@@ -1,11 +1,7 @@
 import { Hono } from 'hono'
-import type { ModelRegistry, ModelLeaderboard } from '@group-goki/core'
-import { createModelAgent, formatAgentSummary } from '@group-goki/chat'
+import type { ModelRegistry } from '@group-goki/core'
 
-export function createModelRoutes(
-  getRegistry: () => ModelRegistry,
-  getLeaderboard: () => ModelLeaderboard,
-) {
+export function createModelRoutes(getRegistry: () => ModelRegistry) {
   const app = new Hono()
 
   // List all models
@@ -22,42 +18,17 @@ export function createModelRoutes(
     return c.json({ success: true, data: models })
   })
 
-  // Get leaderboard
-  app.get('/leaderboard', (c) => {
-    const category = c.req.query('category')
-    const leaderboard = getLeaderboard()
-
-    if (category) {
-      const entries = leaderboard.getTopModels(category, 20)
-      return c.json({ success: true, data: entries })
-    }
-
-    const entries = leaderboard.getEntries()
-    return c.json({ success: true, data: entries })
-  })
-
-  // Get model profile (agent view)
-  app.get('/:modelId/profile', (c) => {
+  // Get model by ID
+  app.get('/:modelId', (c) => {
     const modelId = c.req.param('modelId')
     const registry = getRegistry()
-    const leaderboard = getLeaderboard()
 
     const model = registry.getAll().find((m) => m.id === modelId)
     if (!model) {
       return c.json({ success: false, error: 'Model not found' }, 404)
     }
 
-    const entries = leaderboard.getEntries()
-    const agent = createModelAgent(modelId, model.name, model.tier, entries)
-
-    return c.json({
-      success: true,
-      data: {
-        agent,
-        summary: formatAgentSummary(agent),
-        shouldRetain: leaderboard.shouldRetain(modelId),
-      },
-    })
+    return c.json({ success: true, data: model })
   })
 
   return app
