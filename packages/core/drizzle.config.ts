@@ -5,6 +5,6 @@ export default {
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'sqlite://./data/group-goki.db',
+    url: process.env.DATABASE_URL ?? './data/group-goki.db',
   },
 } satisfies Config
