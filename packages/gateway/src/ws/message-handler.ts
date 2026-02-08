@@ -45,26 +45,43 @@ export function createMessageHandler(deps: MessageHandlerDeps) {
                 }
                 break
 
-              case 'battle_progress':
+              case 'debate_started':
                 deps.wsServer.broadcast(conversationId, {
-                  type: 'battle_royale_progress',
+                  type: 'debate_started',
                   conversationId,
-                  phase: (event.phase ?? 'analyzing') as 'analyzing' | 'competing' | 'judging' | 'discussing' | 'complete',
-                  detail: event.detail ?? '',
+                  debateSessionId: event.debateSessionId,
+                  participants: event.participants ? [...event.participants] : [],
+                  maxRounds: event.maxRounds ?? 5,
                 })
                 break
 
-              case 'evaluation':
-                if (event.battleResult) {
+              case 'goki_response':
+                if (event.message) {
                   deps.wsServer.broadcast(conversationId, {
-                    type: 'evaluation_result',
-                    conversationId,
-                    evaluations: [...event.battleResult.allEvaluations],
-                    winnerModelId: event.battleResult.winnerModelId,
-                    consensus: event.battleResult.consensus,
-                    divergences: event.battleResult.divergences,
+                    type: 'goki_response',
+                    message: event.message,
+                    debateSessionId: event.debateSessionId,
                   })
                 }
+                break
+
+              case 'debate_round_complete':
+                deps.wsServer.broadcast(conversationId, {
+                  type: 'debate_round_complete',
+                  conversationId,
+                  debateRound: event.debateRound,
+                  debateSessionId: event.debateSessionId,
+                })
+                break
+
+              case 'consensus_reached':
+                deps.wsServer.broadcast(conversationId, {
+                  type: 'consensus_reached',
+                  conversationId,
+                  debateResult: event.debateResult,
+                  debateSessionId: event.debateSessionId,
+                  message: event.message,
+                })
                 break
 
               case 'error':
