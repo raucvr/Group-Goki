@@ -75,13 +75,15 @@ export function createMessageHandler(deps: MessageHandlerDeps) {
                 break
 
               case 'consensus_reached':
-                deps.wsServer.broadcast(conversationId, {
-                  type: 'consensus_reached',
-                  conversationId,
-                  debateResult: event.debateResult,
-                  debateSessionId: event.debateSessionId,
-                  message: event.message,
-                })
+                if (event.message) {
+                  deps.wsServer.broadcast(conversationId, {
+                    type: 'consensus_reached',
+                    conversationId,
+                    debateResult: event.debateResult,
+                    debateSessionId: event.debateSessionId,
+                    message: event.message,
+                  })
+                }
                 break
 
               case 'error':

@@ -174,6 +174,13 @@ describe('WsOutgoingEventSchema', () => {
         areasOfAgreement: ['Quality is important', 'Speed matters'],
         rounds: [],
       },
+      message: {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        role: 'system',
+        content: 'Consensus reached after 3 rounds.',
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
     }
     const result = WsOutgoingEventSchema.parse(event)
     expect(result.type).toBe('consensus_reached')

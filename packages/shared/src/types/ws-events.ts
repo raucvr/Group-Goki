@@ -69,7 +69,7 @@ export const WsDebateStartedSchema = z.object({
 
 export const WsGokiResponseSchema = z.object({
   type: z.literal('goki_response'),
-  message: ChatMessageSchema.optional(),
+  message: ChatMessageSchema,
   debateSessionId: z.string().optional(),
 })
 
@@ -85,7 +85,7 @@ export const WsConsensusReachedSchema = z.object({
   conversationId: z.string(),
   debateSessionId: z.string().optional(),
   debateResult: z.unknown().optional(), // Accept any DebateResult shape
-  message: ChatMessageSchema.optional(),
+  message: ChatMessageSchema,
 })
 
 export const WsErrorEventSchema = z.object({
