@@ -4,7 +4,6 @@ import { useRef, useEffect } from 'react'
 import { useChatStore } from '@/lib/store'
 import { MessageBubble } from './message-bubble'
 import { MessageInput } from './message-input'
-import { BattleProgressIndicator } from './battle-progress'
 
 interface ChatPanelProps {
   onSendMessage: (content: string) => void
@@ -15,7 +14,6 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
   const messages = useChatStore((s) =>
     activeId ? s.messagesByConversation[activeId] ?? [] : [],
   )
-  const battleProgress = useChatStore((s) => s.battleProgress)
   const isLoading = useChatStore((s) => s.isLoading)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -24,7 +22,7 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages.length, battleProgress])
+  }, [messages.length])
 
   if (!activeId) {
     return (
@@ -46,16 +44,12 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-
-        {battleProgress && battleProgress.conversationId === activeId && (
-          <BattleProgressIndicator progress={battleProgress} />
-        )}
       </div>
 
       <MessageInput
         onSend={onSendMessage}
         disabled={isLoading}
-        placeholder={isLoading ? 'Models are working...' : undefined}
+        placeholder={isLoading ? 'Gokis are discussing...' : undefined}
       />
     </div>
   )
