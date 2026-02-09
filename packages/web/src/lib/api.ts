@@ -46,9 +46,5 @@ export const api = {
   models: {
     list: () => fetchApi<unknown[]>('/api/models'),
     active: () => fetchApi<unknown[]>('/api/models/active'),
-    leaderboard: (category?: string) => {
-      const params = category ? `?category=${category}` : ''
-      return fetchApi<unknown[]>(`/api/models/leaderboard${params}`)
-    },
   },
 }

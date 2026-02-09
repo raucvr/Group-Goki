@@ -2,19 +2,19 @@ import { describe, it, expect } from 'vitest'
 import {
   WsIncomingEventSchema,
   WsOutgoingEventSchema,
-  BattleRoyalePhaseSchema,
+  GokiRoleSchema,
 } from '../ws-events.js'
 
-describe('BattleRoyalePhaseSchema', () => {
-  it.each(['analyzing', 'competing', 'judging', 'discussing', 'complete'])(
+describe('GokiRoleSchema', () => {
+  it.each(['strategy', 'tech', 'product', 'execution'])(
     'accepts "%s"',
-    (phase) => {
-      expect(BattleRoyalePhaseSchema.parse(phase)).toBe(phase)
+    (role) => {
+      expect(GokiRoleSchema.parse(role)).toBe(role)
     },
   )
 
-  it('rejects unknown phase', () => {
-    expect(() => BattleRoyalePhaseSchema.parse('starting')).toThrow()
+  it('rejects unknown role', () => {
+    expect(() => GokiRoleSchema.parse('marketing')).toThrow()
   })
 })
 
@@ -105,54 +105,85 @@ describe('WsOutgoingEventSchema', () => {
     expect(result.type).toBe('message_stream')
   })
 
-  it('parses battle_royale_progress event', () => {
+  it('parses debate_started event', () => {
     const event = {
-      type: 'battle_royale_progress',
+      type: 'debate_started',
       conversationId: 'conv-1',
-      phase: 'competing',
-      detail: 'Models are generating responses',
-    }
-    const result = WsOutgoingEventSchema.parse(event)
-    expect(result.type).toBe('battle_royale_progress')
-  })
-
-  it('parses battle_royale_progress with optional candidateModels', () => {
-    const event = {
-      type: 'battle_royale_progress',
-      conversationId: 'conv-1',
-      phase: 'competing',
-      detail: 'Running',
-      candidateModels: ['gpt-4o', 'claude-3.5-sonnet'],
-    }
-    const result = WsOutgoingEventSchema.parse(event)
-    if (result.type === 'battle_royale_progress') {
-      expect(result.candidateModels).toEqual(['gpt-4o', 'claude-3.5-sonnet'])
-    }
-  })
-
-  it('parses evaluation_result event', () => {
-    const event = {
-      type: 'evaluation_result',
-      conversationId: 'conv-1',
-      evaluations: [
-        {
-          id: 'eval-1',
-          taskId: 'task-1',
-          modelId: 'gpt-4o',
-          judgeModelId: 'claude-3.5-sonnet',
-          overallScore: 90,
-          criteria: [{ name: 'quality', score: 90, reasoning: 'good' }],
-          rank: 1,
-          totalCompetitors: 2,
-          responseTimeMs: 1000,
-          tokenCost: 0.01,
-          createdAt: '2025-01-01T00:00:00.000Z',
-        },
+      debateSessionId: 'debate-1',
+      participants: [
+        { role: 'strategy', modelId: 'claude-sonnet-4' },
+        { role: 'tech', modelId: 'gpt-4o' },
       ],
-      winnerModelId: 'gpt-4o',
+      maxRounds: 5,
     }
     const result = WsOutgoingEventSchema.parse(event)
-    expect(result.type).toBe('evaluation_result')
+    expect(result.type).toBe('debate_started')
+  })
+
+  it('parses debate_started with optional fields', () => {
+    const event = {
+      type: 'debate_started',
+      conversationId: 'conv-1',
+    }
+    const result = WsOutgoingEventSchema.parse(event)
+    expect(result.type).toBe('debate_started')
+  })
+
+  it('parses goki_response event', () => {
+    const event = {
+      type: 'goki_response',
+      debateSessionId: 'debate-1',
+      message: {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        role: 'model',
+        modelId: 'claude-sonnet-4',
+        content: 'Strategic perspective...',
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
+    }
+    const result = WsOutgoingEventSchema.parse(event)
+    expect(result.type).toBe('goki_response')
+  })
+
+  it('parses debate_round_complete event', () => {
+    const event = {
+      type: 'debate_round_complete',
+      conversationId: 'conv-1',
+      debateSessionId: 'debate-1',
+      debateRound: {
+        roundNumber: 1,
+        responses: [],
+        consensusScore: 0.75,
+      },
+    }
+    const result = WsOutgoingEventSchema.parse(event)
+    expect(result.type).toBe('debate_round_complete')
+  })
+
+  it('parses consensus_reached event', () => {
+    const event = {
+      type: 'consensus_reached',
+      conversationId: 'conv-1',
+      debateSessionId: 'debate-1',
+      debateResult: {
+        status: 'consensus_reached',
+        totalRounds: 3,
+        consensusScore: 0.85,
+        finalRecommendation: 'The team recommends...',
+        areasOfAgreement: ['Quality is important', 'Speed matters'],
+        rounds: [],
+      },
+      message: {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        role: 'system',
+        content: 'Consensus reached after 3 rounds.',
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
+    }
+    const result = WsOutgoingEventSchema.parse(event)
+    expect(result.type).toBe('consensus_reached')
   })
 
   it('parses error event', () => {

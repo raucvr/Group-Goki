@@ -3,29 +3,6 @@
 import { create } from 'zustand'
 import type { ChatMessage, Conversation } from './api'
 
-export interface BattleProgress {
-  conversationId: string
-  phase: string
-  detail: string
-  candidateModels?: string[]
-}
-
-export interface BattleEvaluationSummary {
-  conversationId: string
-  evaluations: Array<{
-    modelId: string
-    overallScore: number
-    rank: number
-    totalCompetitors: number
-    criteria: Array<{ name: string; score: number; reasoning: string }>
-    strengthSummary?: string
-    weaknessSummary?: string
-  }>
-  winnerModelId: string
-  consensus?: string
-  divergences?: string
-}
-
 interface ChatStore {
   // Conversations
   conversations: Conversation[]
@@ -38,14 +15,6 @@ interface ChatStore {
   messagesByConversation: Record<string, ChatMessage[]>
   addMessage: (message: ChatMessage) => void
   setMessages: (conversationId: string, messages: ChatMessage[]) => void
-
-  // Battle Royale state
-  battleProgress: BattleProgress | null
-  setBattleProgress: (progress: BattleProgress | null) => void
-
-  // Latest evaluation
-  latestEvaluation: BattleEvaluationSummary | null
-  setLatestEvaluation: (evaluation: BattleEvaluationSummary | null) => void
 
   // UI state
   isLoading: boolean
@@ -84,13 +53,6 @@ export const useChatStore = create<ChatStore>((set) => ({
         [conversationId]: messages,
       },
     })),
-
-  // Battle state
-  battleProgress: null,
-  setBattleProgress: (progress) => set({ battleProgress: progress }),
-
-  latestEvaluation: null,
-  setLatestEvaluation: (evaluation) => set({ latestEvaluation: evaluation }),
 
   // UI
   isLoading: false,

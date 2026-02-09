@@ -1,12 +1,11 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { useChatStore, type BattleEvaluationSummary } from '@/lib/store'
+import { useChatStore } from '@/lib/store'
 import { useWebSocket, type WsOutgoingEvent } from '@/lib/ws'
 import { api } from '@/lib/api'
 import { ChatPanel } from '@/components/chat/chat-panel'
 import { ConversationList } from '@/components/sidebar/conversation-list'
-import { LeaderboardPanel } from '@/components/leaderboard/leaderboard-panel'
 
 export default function Home() {
   const activeId = useChatStore((s) => s.activeConversationId)
@@ -15,8 +14,6 @@ export default function Home() {
   const addConversation = useChatStore((s) => s.addConversation)
   const addMessage = useChatStore((s) => s.addMessage)
   const setMessages = useChatStore((s) => s.setMessages)
-  const setBattleProgress = useChatStore((s) => s.setBattleProgress)
-  const setLatestEvaluation = useChatStore((s) => s.setLatestEvaluation)
   const setIsLoading = useChatStore((s) => s.setIsLoading)
   const sidebarOpen = useChatStore((s) => s.sidebarOpen)
 
@@ -26,32 +23,24 @@ export default function Home() {
         case 'message':
           addMessage(event.message)
           setIsLoading(false)
-          setBattleProgress(null)
           break
-        case 'battle_royale_progress':
-          setBattleProgress({
-            conversationId: event.conversationId,
-            phase: event.phase,
-            detail: event.detail,
-            candidateModels: event.candidateModels,
-          })
+        case 'goki_response':
+          if (event.message) {
+            addMessage(event.message)
+          }
           break
-        case 'evaluation_result':
-          setLatestEvaluation({
-            conversationId: event.conversationId,
-            evaluations: event.evaluations as BattleEvaluationSummary['evaluations'],
-            winnerModelId: event.winnerModelId,
-            consensus: event.consensus,
-            divergences: event.divergences,
-          })
+        case 'consensus_reached':
+          if (event.message) {
+            addMessage(event.message)
+          }
+          setIsLoading(false)
           break
         case 'error':
           setIsLoading(false)
-          setBattleProgress(null)
           break
       }
     },
-    [addMessage, setBattleProgress, setLatestEvaluation, setIsLoading],
+    [addMessage, setIsLoading],
   )
 
   const { sendMessage, subscribe, status } = useWebSocket({
@@ -121,11 +110,6 @@ export default function Home() {
         </header>
         <ChatPanel onSendMessage={handleSendMessage} />
       </div>
-
-      {/* Right panel - Leaderboard */}
-      <aside className="w-72 border-l border-border flex-shrink-0 overflow-y-auto hidden lg:block">
-        <LeaderboardPanel />
-      </aside>
     </main>
   )
 }

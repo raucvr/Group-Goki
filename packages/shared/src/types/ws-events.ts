@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { ChatMessageSchema } from './messages.js'
-import { EvaluationResultSchema } from './evaluation.js'
 
 // Client -> Server events
 export const WsAuthSchema = z.object({
@@ -33,15 +32,6 @@ export const WsIncomingEventSchema = z.discriminatedUnion('type', [
 export type WsIncomingEvent = z.infer<typeof WsIncomingEventSchema>
 
 // Server -> Client events
-export const BattleRoyalePhaseSchema = z.enum([
-  'analyzing',
-  'competing',
-  'judging',
-  'discussing',
-  'complete',
-])
-export type BattleRoyalePhase = z.infer<typeof BattleRoyalePhaseSchema>
-
 export const WsMessageEventSchema = z.object({
   type: z.literal('message'),
   message: ChatMessageSchema,
@@ -55,68 +45,47 @@ export const WsStreamEventSchema = z.object({
   done: z.boolean(),
 })
 
-export const WsBattleProgressSchema = z.object({
-  type: z.literal('battle_royale_progress'),
-  conversationId: z.string(),
-  phase: BattleRoyalePhaseSchema,
-  detail: z.string(),
-  candidateModels: z.array(z.string()).optional(),
-})
-
-export const WsEvaluationResultSchema = z.object({
-  type: z.literal('evaluation_result'),
-  conversationId: z.string(),
-  evaluations: z.array(EvaluationResultSchema),
-  winnerModelId: z.string(),
-  consensus: z.string().optional(),
-  divergences: z.string().optional(),
-})
-
 export const WsAuthenticatedEventSchema = z.object({
   type: z.literal('authenticated'),
   userId: z.string(),
 })
 
-// Debate events
+// Debate events (simplified to match DiscussionEvent)
+export const GokiRoleSchema = z.enum(['strategy', 'tech', 'product', 'execution'])
+export type GokiRole = z.infer<typeof GokiRoleSchema>
+
 export const WsDebateStartedSchema = z.object({
   type: z.literal('debate_started'),
   conversationId: z.string(),
-  debateSessionId: z.string(),
+  debateSessionId: z.string().optional(),
   participants: z.array(
     z.object({
-      role: z.enum(['strategy', 'tech', 'product', 'execution']),
+      role: GokiRoleSchema,
       modelId: z.string(),
     }),
-  ),
-  maxRounds: z.number(),
+  ).optional(),
+  maxRounds: z.number().optional(),
 })
 
 export const WsGokiResponseSchema = z.object({
   type: z.literal('goki_response'),
-  conversationId: z.string(),
-  debateSessionId: z.string(),
-  role: z.enum(['strategy', 'tech', 'product', 'execution']),
-  modelId: z.string(),
   message: ChatMessageSchema,
-  roundNumber: z.number(),
+  debateSessionId: z.string().optional(),
 })
 
 export const WsDebateRoundCompleteSchema = z.object({
   type: z.literal('debate_round_complete'),
   conversationId: z.string(),
-  debateSessionId: z.string(),
-  roundNumber: z.number(),
-  consensusScore: z.number().optional(),
+  debateSessionId: z.string().optional(),
+  debateRound: z.unknown().optional(), // Accept any DebateRound shape
 })
 
 export const WsConsensusReachedSchema = z.object({
   type: z.literal('consensus_reached'),
   conversationId: z.string(),
-  debateSessionId: z.string(),
-  totalRounds: z.number(),
-  consensusScore: z.number(),
-  finalRecommendation: z.string(),
-  areasOfAgreement: z.array(z.string()),
+  debateSessionId: z.string().optional(),
+  debateResult: z.unknown().optional(), // Accept any DebateResult shape
+  message: ChatMessageSchema,
 })
 
 export const WsErrorEventSchema = z.object({
@@ -129,8 +98,6 @@ export const WsOutgoingEventSchema = z.discriminatedUnion('type', [
   WsAuthenticatedEventSchema,
   WsMessageEventSchema,
   WsStreamEventSchema,
-  WsBattleProgressSchema,
-  WsEvaluationResultSchema,
   WsDebateStartedSchema,
   WsGokiResponseSchema,
   WsDebateRoundCompleteSchema,

@@ -65,15 +65,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className={`max-w-[85%] rounded-lg border-l-2 ${colorClass} bg-muted/30 px-4 py-3`}>
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-semibold text-foreground">{modelName}</span>
-          {message.evaluationScore !== undefined && (
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-              message.evaluationScore >= 80 ? 'bg-green-500/20 text-green-400' :
-              message.evaluationScore >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
-              'bg-red-500/20 text-red-400'
-            }`}>
-              {message.evaluationScore}/100
-            </span>
-          )}
           {typeof (message.metadata as Record<string, unknown>)?.turnReason === 'string' && (
             <span className="text-xs text-muted-foreground">
               ({String((message.metadata as Record<string, unknown>).turnReason)})
